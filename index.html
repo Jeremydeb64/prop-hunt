@@ -252,7 +252,7 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
   <section class="tab" data-panel="how">
     <ol id="steps"><li><b>On se cache</b>Les objets ont <span data-show="pd">30 s</span> pour se déguiser.</li><li><b>On cherche</b>Les chasseurs ont <span data-show="hd">4 min</span> pour les trouver.</li><li><b>On échange</b>Les rôles tournent à chaque manche.</li></ol>
     <div class="rolecard"><h2>Objet.</h2><p>Devenez un objet du décor et tenez jusqu'à la fin du temps.</p>
-      <dl class="keys"><dt><kbd data-key="use">E</kbd></dt><dd>Devenir la copie de l'objet visé</dd><dt><kbd data-key="take">Q</kbd></dt><dd>Prendre sa place exacte, l'original disparaît</dd><dt><kbd data-key="special">F</kbd></dt><dd>Poser un leurre, 3 par manche</dd>
+      <dl class="keys"><dt><kbd data-key="use">E</kbd></dt><dd>Devenir la copie de l'objet visé</dd><dt><kbd data-key="take">Q</kbd></dt><dd>Prendre sa place exacte, l'original disparaît</dd><dt><kbd>5</kbd></dt><dd>Déguisements par manche, pas un de plus</dd><dt><kbd data-key="special">F</kbd></dt><dd>Poser un leurre, 3 par manche</dd>
         <dt><kbd data-key="rotate">R</kbd></dt><dd>Pivoter ; le clic droit bloque la rotation</dd><dt><kbd data-key="whistle">G</kbd></dt><dd>Narguer le chasseur d'un petit bruit, 15 points</dd><dt><kbd data-key="run">Shift</kbd></dt><dd>Accélérer un court instant</dd><dt><kbd data-key="jump">Espace</kbd></dt><dd>Sauter, y compris sur les meubles. En tableau, on se colle au mur le plus proche</dd></dl></div>
     <div class="rolecard"><h2>Chasseur.</h2><p>Trouvez les joueurs déguisés. Trois tirs sur de vrais objets ou des leurres coûtent une vie ; vous en avez trois.</p>
       <dl class="keys"><dt>Clic gauche</dt><dd>Tirer, 6 coups par chargeur. Le tir laisse une tache de votre couleur</dd><dt>Clic droit</dt><dd>Viser</dd><dt><kbd data-key="reload">R</kbd></dt><dd>Recharger</dd><dt><kbd data-key="run">Shift</kbd></dt><dd>Courir</dd><dt><kbd data-key="crouch">C</kbd></dt><dd>S'accroupir</dd></dl></div>
@@ -300,7 +300,7 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'h
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.0;
+renderer.toneMappingExposure=.76;   // rendu moins brûlé : exposition baissée, lumière d'ambiance réduite pour retrouver du relief
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
@@ -385,7 +385,7 @@ function glassWall(g,ax,ay,bx,by,top){const x0=X(ax),x1=X(bx),z0=Z(ay),z1=Z(by),
 /* ---------- sols ---------- */
 E(arch,M(0x8a8782),X(FX0),X(FX1),-.25,0,Z(FZ0),Z(FZ1),{cast:false});
 floor(85,283,1250,775,.002,T.carpet,.9);
-floor(85,283,178,522,.004,null,1,0xbdbab4);
+floor(85,283,178,522,.004,T.carpet,.9,0x50545c);floor(140,283,144,522,.0052,null,1,0xed1b54);   // couloir d'entrée : moquette anthracite et filet rouge, pour ne plus avoir un couloir tout blanc
 floor(183,283,393,522,.004,T.dark,.8);
 floor(393,305,640,438,.014,T.grass,.6);
 floor(958,308,1040,390,.006,T.check,.42);
@@ -699,7 +699,7 @@ plane(arch,new THREE.MeshStandardMaterial({map:rep(T.slats,(X(1250)-X(952))/.32,
 {const gw=new THREE.MeshStandardMaterial({map:T.greenwall,roughness:1});E(arch,gw,X(1070),X(1122),0,H,Z(452),Z(452)+.1);
   for(let i=0;i<26;i++){const b=bush(.3,8,-.3,.8,.3);b.position.set(rr(X(1073),X(1119)),rr(.2,2.45),Z(452)+.1);b.rotation.x=PI/2;arch.add(b);}}
 put(loungeChair(),985,492,PI/2+.5);put(loungeChair(),1042,540,-PI/2-.9);put(pebbleTable(),1012,516,.6);
-put(softPouf(MAT.anthra,.38,.38,.46),1092,486,0);put(softPouf(MAT.anthra,.38,.38,.46),1168,500,0);put(softPouf(MAT.pink,.52,.4,.36),1100,556,.4);
+put(softPouf(MAT.anthra,.38,.38,.46),1092,486,0);put(softPouf(MAT.anthra,.38,.38,.46),1158,526,0);put(softPouf(MAT.pink,.52,.4,.36),1100,556,.4);
 put(sideTable(),1130,492);put(barTable(),1212,548);
 
 /* ---------- SALLE DE RÉUNION ---------- */
@@ -829,7 +829,7 @@ function applyLight(){const s=light,p=sunPos(s.doy,s.min),d=sunDir(p),above=p.el
     day=Math.min(1,Math.max(0,(p.el+6)/18)),warm=Math.min(1,Math.max(0,(p.el-2)/28)),direct=above&&n>0&&s.sky<2;
   sun.intensity=direct?5*tr*[1,.35,0][s.sky]:0;sun.color.setRGB(1,.74+.22*warm,.5+.4*warm);
   if(p.el>-3){sun.position.copy(sun.target.position).addScaledVector(d,90);sun.updateMatrix();sun.updateMatrixWorld(true);}
-  const art=applyLum();hemi.intensity=.03+.15*art+.24*day*(s.sky===2?.9:1);amb.intensity=.01+.04*art+.04*day;
+  const art=applyLum();hemi.intensity=.02+.105*art+.17*day*(s.sky===2?.9:1);amb.intensity=.006+.024*art+.024*day;
   skyWalk.copy(SKYN).lerp(s.sky===2?SKYO:SKYD,day);ridgeMat.color.copy(RDN).lerp(RDD,day);
   sunDisc.visible=s.sky<2;sunDisc.position.set(12,EYE,5).addScaledVector(d,900);sunDisc.lookAt(12,EYE,5);sunDisc.updateMatrix();sunDisc.updateMatrixWorld(true);
   renderer.shadowMap.needsUpdate=true;
@@ -912,6 +912,25 @@ if(document.fonts&&document.fonts.load)document.fonts.load('900 40px "GT Walshei
 own.tableau=a=>{const g=new THREE.Group(),w=.72,h=.5;B(g,M(0x151515,{roughness:.6}),w+.03,h+.03,.03,0,0,.015);const p=label(a[0],w,h,{bg:a[1],fg:a[2],size:.44});p.position.set(0,0,.0312);g.add(p);return g;};
 /* ---------- stylo ---------- */
 own.stylo=col=>{const g=new THREE.Group(),m=M(col||0xed1b54,{roughness:.4});C(g,m,.0055,.115,0,.0055,0,10).rotation.z=PI/2;C(g,P.MAT.black,.006,.03,.07,.0055,0,10).rotation.z=PI/2;C(g,P.MAT.steel,.003,.012,-.063,.0055,0,8).rotation.z=PI/2;B(g,P.MAT.steel,.03,.002,.003,.062,.012,0);return g;};
+/* ---------- trottinette, horloge murale, globe, porte-parapluies, balance ---------- */
+own.trott=col=>{const g=new THREE.Group(),m=M(col||0x2b2b2e,{roughness:.45,metalness:.4}),bk=P.MAT.black,red=M(0xed1b54,{roughness:.8});
+  B(g,m,.46,.022,.12,-.02,.09,0);B(g,red,.3,.004,.09,-.04,.103,0);B(g,m,.13,.016,.07,-.27,.118,0);
+  for(const x of[-.3,.33]){const w=C(g,bk,.055,.028,x,.055,0,16);w.rotation.x=PI/2;}
+  rod(g,m,[.2,.09,0],[.33,.15,0],.014,8);rod(g,m,[.33,.07,0],[.27,.98,0],.015,8);B(g,bk,.03,.03,.42,.27,.98,0);for(const s of[-1,1])B(g,red,.036,.036,.09,.27,.98,s*.17);return g;};
+own.horloge=()=>{const g=new THREE.Group(),bk=P.MAT.black,hand=(a,l,w,mat,z)=>{const b=B(g,mat,w,l,.003,Math.sin(a)*l/2,Math.cos(a)*l/2,z);b.rotation.z=-a;};
+  C(g,M(0x151515,{roughness:.5}),.17,.035,0,0,.0175,28).rotation.x=PI/2;C(g,M(0xf6f5f2,{roughness:.7}),.152,.004,0,0,.036,28).rotation.x=PI/2;
+  for(let i=0;i<12;i++){const a=i*PI/6,t=B(g,bk,.008,i%3?.018:.034,.002,Math.sin(a)*.128,Math.cos(a)*.128,.039);t.rotation.z=-a;}
+  hand(-PI/3,.075,.012,bk,.041);hand(PI/3,.115,.008,bk,.044);hand(2.6,.125,.004,M(0xed1b54),.047);C(g,bk,.012,.016,0,0,.045,10).rotation.x=PI/2;return g;};
+own.globe=()=>{const g=new THREE.Group(),wood=M(0x6b4f36,{roughness:.6}),brass=M(0xb08d4a,{roughness:.35,metalness:.7});
+  g.add(lathe([[0,0],[.19,0],[.2,.03],[.05,.06],[.03,.5],[.05,.57],[0,.57]],18,wood));
+  const map=P.ctex(256,128,(c,w,h)=>{c.fillStyle='#2f6f9f';c.fillRect(0,0,w,h);c.fillStyle='#7da55c';for(let i=0;i<16;i++){c.beginPath();c.ellipse(rr(0,w),rr(h*.15,h*.85),rr(10,34),rr(6,20),rr(0,3),0,7);c.fill();}c.fillStyle='#f3f1ea';c.fillRect(0,0,w,7);c.fillRect(0,h-9,w,9);});
+  const s=new THREE.Mesh(new THREE.SphereGeometry(.2,24,16),new THREE.MeshStandardMaterial({map,roughness:.5}));s.position.y=.82;s.rotation.z=.4;s.castShadow=s.receiveShadow=true;g.add(s);
+  const arc=new THREE.Mesh(new THREE.TorusGeometry(.218,.008,6,24,PI),brass);arc.position.y=.82;arc.rotation.z=-PI/2+.4;arc.castShadow=true;g.add(arc);rod(g,brass,[0,.57,0],[-.085,.62,0],.01,6);return g;};
+own.parapluies=()=>{const g=new THREE.Group();g.add(lathe([[0,0],[.11,0],[.13,.5],[.118,.5],[.1,.02],[0,.02]],18,M(0x2b2b2e,{roughness:.4,metalness:.5})));
+  [[0x1d1d1f,-.04,.02,.12],[0xed1b54,.045,-.03,-.1]].forEach(u=>{const q=new THREE.Group();const cl=lathe([[0,0],[.008,0],[.034,.5],[.012,.62],[0,.62]],10,M(u[0],{roughness:.8}));cl.position.y=.03;q.add(cl);rod(q,P.MAT.black,[0,.6,0],[0,.86,0],.007,6);
+    const hk=new THREE.Mesh(new THREE.TorusGeometry(.03,.008,6,10,PI),M(0x6b4f36,{roughness:.6}));hk.position.set(.03,.86,0);hk.castShadow=true;q.add(hk);q.position.set(u[1],.03,u[2]);q.rotation.z=u[3];g.add(q);});return g;};
+own.balance=()=>{const g=new THREE.Group(),br=M(0xb08d4a,{roughness:.3,metalness:.8});g.add(lathe([[0,0],[.07,0],[.075,.012],[.02,.025],[.012,.27],[.02,.285],[0,.29]],14,br));B(g,br,.3,.01,.012,0,.27,0);
+  for(const s of[-1,1]){for(const a of[0,2.1,4.2])rod(g,br,[s*.145,.27,0],[s*.145+Math.cos(a)*.04,.15,Math.sin(a)*.04],.0018,4);const pan=lathe([[0,.006],[.03,0],[.05,.012],[.047,.016],[.03,.006],[0,.01]],14,br);pan.position.set(s*.145,.14,0);g.add(pan);}return g;};
 const PENS=[0xed1b54,0x1d1d1f,0x2a6bc2,0xf6f5f2],pen=()=>mk('o:stylo',own.stylo(pick(PENS)));
 
 /* ---------- habillage : [objet, x plan, y plan, rotation, hauteur de pose, implantation] ---------- */
@@ -924,13 +943,13 @@ const NAVY={carpet:0x2b3350,carpetBlue:0x2b3350},NOYER={wood:0x8a6a4a,woodDark:0
 /* poste de travail type de l'étude : bureau, siège, écran, clavier, un objet ; la personne regarde vers « ry » */
 function poste(px,pz,ry){const c=Math.cos(ry),s=Math.sin(ry),put=(o,lx,lz,y,r)=>{o.position.set(X(px)+lx*c+lz*s,y||0,Z(pz)-lx*s+lz*c);o.rotation.y=ry+(r||0);furn.add(o);return o;};
   put(model('desk',NOYER),0,0);put(model('chairDesk',{carpet:0x2b2b2e}),0,-.8,0,rr(-.3,.3));put(model('computerScreen'),0,.14,.77,PI);put(model('computerKeyboard'),0,-.14,.77,PI);
-  put(model(pick(['lampRoundTable','books','plantSmall1','laptop','lampSquareTable'])),pick([-.52,.52]),.12,.77,rr(-.5,.5));if(rnd()<.6)put(mk('o:tasse',own.tasse(pick([0xf6f5f2,0x2b2b2e,0x3b3f9f]))),.32,-.2,.77,rr(0,6));if(rnd()<.5)put(mk('o:stylo',own.stylo(pick([0xed1b54,0x1d1d1f,0x2a6bc2]))),-.3,-.16,.77,rr(0,3));}
+  put(model(pick(['lampRoundTable','books','plantSmall1','laptop','lampSquareTable'])),pick([-.52,.52]),.12,.77,rr(-.5,.5));if(rnd()<.6)put(model('computerMouse'),.3,-.13,.77,PI+rr(-.2,.2));if(rnd()<.6)put(mk('o:tasse',own.tasse(pick([0xf6f5f2,0x2b2b2e,0x3b3f9f]))),.46,-.24,.77,rr(0,6));if(rnd()<.5)put(mk('o:stylo',own.stylo(pick([0xed1b54,0x1d1d1f,0x2a6bc2]))),-.3,-.16,.77,rr(0,3));}
 
 /* ===== BOOMERANG : allégé, une partie des objets est partie au dépôt et dans les nouvelles zones ===== */
 // Entrée et couloir (la porte des vestiaires, mur ouest, reste dégagée)
-K('rugDoormat',142,298,0,.006);K('coatRackStanding',163,428);O('extincteur',92,290,E);K('benchCushion',97,400,E,0,null,{carpet:0x3b3f9f});
+K('rugDoormat',142,298,0,.006);K('coatRackStanding',163,428);O('extincteur',92,290,E);K('benchCushion',97,400,E,0,null,{carpet:0x3b3f9f});O('parapluies',170,297);
 // Cuisine
-K('kitchenCoffeeMachine',200,298,0,.92);K('toaster',275,298,0,.92);K('kitchenBlender',295,298,0,.92);K('kitchenMicrowave',322,299,0,.92);O('tasse',212,300,.6,.92,null,0xe2254f);
+K('kitchenCoffeeMachine',200,298,0,.92);K('toaster',275,298,0,.92);K('kitchenBlender',295,298,0,.92);K('kitchenMicrowave',322,299,0,.92);O('tasse',212,300,.6,.92,null,0xe2254f);O('horloge',240,283,0,2);
 K('kitchenFridgeSmall',350,507,N);K('trashcan',200,506);O('fontaine',196,385,E);K('pottedPlant',372,428);K('books',302,352,.4,.951);K('plantSmall2',302,398,0,.951);
 // Jardin
 place(build.gnome(),410,322,.5);place(build.gnome(),612,322,-.6);place(build.trellis(),445,316,0);place(build.oliveTree(),598,324,0);place(build.planter(1.2,.4,.3,null,'grass'),585,432,0);K('plantSmall1',448,402,0,.748);K('plantSmall3',568,386,0,.748);
@@ -939,10 +958,10 @@ K('bookcaseOpen',903,318,0);K('pottedPlant',936,320);K('lampRoundTable',716,430,
 // La Douche
 O('flipchart',1062,330,.3);K('pillow',1102,420,.4,0,null,{carpet:0xe4c61c});K('pillowBlue',1190,424,-.5);K('speaker',1238,432,W);K('bear',1236,326,W+.4);
 // Espace chill
-K('loungeSofa',1182,474,0,0,null,{carpet:0x58655d});K('cabinetTelevision',1008,464,0);K('televisionVintage',1008,464,.1,.62);K('rugRound',1012,516,0,.012,null,{carpet:0xcbbda4,carpetDarker:0x8f7e66});
-K('lampRoundFloor',962,462);K('radio',1130,492,.4,.54);K('pottedPlant',1240,574);K('loungeSofaOttoman',1175,535,.2,0,null,{carpet:0x58655d});
+K('loungeSofa',1196,474,0,0,null,{carpet:0x58655d});K('cabinetTelevision',1008,464,0);K('televisionVintage',1008,464,.1,.62);K('rugRound',1012,516,0,.012,null,{carpet:0xcbbda4,carpetDarker:0x8f7e66});
+K('radio',1130,492,.4,.54);K('pottedPlant',1240,574);
 // Open space : allée centrale dégagée
-K('pottedPlant',520,548);K('trashcan',505,562);O('rollup',928,549,0);K('coatRackStanding',936,582);O('plante',800,596,0,0,null,.9);
+K('pottedPlant',520,548);K('trashcan',505,562);O('rollup',928,549,0);K('coatRackStanding',936,582);O('plante',800,596,0,0,null,.9);O('skate',548,556,.3);O('ballon',420,588,0,0,null,0xe2254f);O('trott',936,508,W);
 K('pottedPlant',1236,610);K('pottedPlant',1236,762);K('loungeChairRelax',1212,690,W,0,null,{carpet:0x3b3f9f});K('pottedPlant',403,764);O('extincteur',400,708,E);
 // Salle de réunion
 K('pottedPlant',101,760);O('plante',370,760,0,0,null,1.2);K('lampRoundFloor',168,543);O('flipchart',352,722,W-.4);K('sideTableDrawers',94,649,E);K('laptop',224,640,N,.762);K('books',270,656,.6,.762);O('tasse',212,662,1,.762);K('radio',94,640,E,.61);
@@ -957,46 +976,46 @@ const DESK=['laptop','lampRoundTable','lampSquareTable','plantSmall1','plantSmal
 
 /* ===== VESTIAIRES, SAS ET DÉPÔT (derrière la porte de gauche du couloir) ===== */
 K('pottedPlant',40,262);O('extincteur',66,412,W);
-K('shower',-152,294,E);[-95,-75,-55].forEach(x=>O('casier',x,260,0));K('bench',-70,329,N);O('sac',-45,300,1,0,null,0xe2254f);K('trashcan',-15,330);
-K('shower',-152,388,E);[-95,-75,-55].forEach(x=>O('casier',x,356,0));K('bench',-70,420,N);O('sac',-100,410,2.2,0,null,0x58655d);K('pillow',-60,415,.2,.47,null,{carpet:0xf3f1ea});
-[475,540,605,670,735].forEach(z=>O('etagere',-169,z,E));O('etagere',-90,763,N);O('etagere',-25,763,N);O('etagere',38,763,N);O('palette',-70,560,.2);O('palette',-20,660,-.3);
-K('cardboardBoxClosed',-105,470,.1);K('cardboardBoxClosed',-88,478,-.3);K('cardboardBoxClosed',-97,474,.4,.56);K('cardboardBoxOpen',-60,480,.6);K('cardboardBoxClosed',20,560,.2);K('cardboardBoxClosed',34,570,-.2);K('cardboardBoxClosed',27,565,.3,.56);
-K('cardboardBoxClosed',-110,720,.2);K('cardboardBoxClosed',-95,728,-.1);K('cardboardBoxOpen',-35,540,.4);
-place(build.printer(),-125,452,0);O('ramettes',-95,452,.1);O('ramettes',-60,700,.4);O('flipchart',52,640,W);O('panneau',-10,520,E);O('cone',-30,505);O('cone',-18,512,.5);
-O('ballon',-125,700,0,0,null,0x2a6bc2);O('ballon',-100,712,0,0,null,0xe2254f);O('ballon',20,610,0,0,null,0xe4c61c);O('skate',-40,600,.7);O('skate',10,700,2.4);
-K('televisionVintage',60,700,W);K('speaker',62,500,W);K('kitchenFridgeSmall',59,590,W);K('bear',-55,725,.3);O('echelle',60,665,W);K('chair',-128,590,.3);K('chair',-116,596,.9);K('chair',-122,606,2);
-O('extincteur',8,446,0);O('sac',0,470,1);K('lampSquareFloor',-140,645);K('coatRackStanding',-140,712);O('rollup',64,540,W);K('stoolBarSquare',-45,620,.3,0,null,{carpet:0x58655d});K('trashcan',-140,520);
-K('chairRounded',-20,585,.4);K('tableCoffeeSquare',5,520,.2);K('speakerSmall',-150,470,E,.78);K('radio',-150,605,E,.78);
+K('shower',-152,294,E);[-95,-75].forEach(x=>O('casier',x,260,0));K('bench',-70,329,N);O('sac',-45,300,1,0,null,0xe2254f);
+K('shower',-152,388,E);[-95,-75].forEach(x=>O('casier',x,356,0));K('bench',-70,420,N);O('sac',-100,410,2.2,0,null,0x58655d);K('pillow',-60,415,.2,.47,null,{carpet:0xf3f1ea});
+// Dépôt : des rayonnages le long des murs, le reste rangé par petits groupes, le centre dégagé
+[475,548,621,694].forEach(z=>O('etagere',-169,z,E));O('etagere',-75,763,N);O('etagere',20,763,N);O('palette',-70,560,.2);O('palette',-20,668,-.3);
+K('cardboardBoxClosed',-98,476,.1);K('cardboardBoxClosed',-70,480,-.3);K('cardboardBoxClosed',-98,476,.5,.56);K('cardboardBoxOpen',15,562,.6);K('cardboardBoxClosed',-112,726,.2);
+place(build.printer(),-125,452,0);O('ramettes',-93,450,.1);O('panneau',-10,520,E);O('cone',-45,505);
+O('ballon',-120,690,0,0,null,0x2a6bc2);O('ballon',20,618,0,0,null,0xe4c61c);O('skate',5,712,2.4);
+K('televisionVintage',60,700,W);K('kitchenFridgeSmall',59,590,W);O('echelle',60,652,W);K('chair',-130,585,.3);K('chair',-128,614,.9);
+O('extincteur',8,446,0);O('rollup',64,540,W);K('stoolBarSquare',-45,620,.3,0,null,{carpet:0x58655d});
+K('speakerSmall',-169,470,E,1.965);K('radio',-169,621,E,1.965);
 
 /* ===== PARTIES COMMUNES : hall, palier, local électrique, sanitaires ===== */
-K('pottedPlant',95,-345);K('benchCushion',91,180,E,0,null,{carpet:0x55545c});K('rugDoormat',150,36,E,.006);O('extincteur',86,-60,E);K('pottedPlant',95,255);K('lampRoundFloor',158,-200);K('trashcan',90,140);
+K('pottedPlant',95,-345);K('benchCushion',91,180,E,0,null,{carpet:0x55545c});K('rugDoormat',150,36,E,.006);O('extincteur',86,-60,E);K('pottedPlant',95,255);K('lampRoundFloor',158,-200);K('trashcan',90,140);K('chairRounded',156,-290,W);O('horloge',168,-120,W,1.95);
 K('pottedPlant',204,-438);K('benchCushion',140,-440,0,0,null,{carpet:0x55545c});O('extincteur',-170,-440,E);
-[-150,-100,-50,0].forEach(x=>O('armoireElec',x,-149,0));K('cardboardBoxClosed',-150,-70,.2);K('cardboardBoxClosed',-135,-66,-.3);O('echelle',-60,-64,N);O('extincteur',55,-62,W);O('ramettes',-20,-66);K('trashcan',40,-66);
+[-150,-100,-50].forEach(x=>O('armoireElec',x,-149,0));K('cardboardBoxClosed',-150,-70,.2);O('echelle',-60,-64,N);O('extincteur',55,-62,W);
 [[-26,24,-22,22,-38],[166,218,170,214,232]].forEach(q=>{K('toilet',-159,q[0],E);K('toilet',-159,q[1],E);K('bathroomSink',54,q[2],W);K('bathroomSink',54,q[3],W);K('bathroomMirror',61,q[2],W,1.2);K('bathroomMirror',61,q[3],W,1.2);K('trashcan',20,q[4]);});
 K('toilet',-159,95,E);K('bathroomSink',-110,67,0);K('pottedPlant',55,128);K('trashcan',-60,64);
 
 /* ===== ÉTUDE D'AVOCATS : mobilier de bureau classique, volontairement neutre ===== */
 // Accueil, attente, secrétariat
-poste(300,36,-PI/2);K('loungeSofa',300,120,N,0,null,NAVY);K('tableCoffeeSquare',300,74,0,0,null,NOYER);K('books',296,73,.4,.44);K('loungeDesignChair',213,121,N,0,null,NAVY);K('pottedPlant',190,126);K('pottedPlant',488,128);K('rugSquare',300,80,0,.008,null,{carpet:0x8f96a3,carpetDarker:0x6f7785});
+poste(300,-6,-PI/2);K('loungeSofa',300,120,N,0,null,NAVY);K('tableCoffeeSquare',300,80,0,0,null,NOYER);K('books',296,79,.4,.44);K('loungeDesignChair',213,121,N,0,null,NAVY);K('pottedPlant',190,86);K('pottedPlant',488,128);K('lampRoundFloor',492,60);O('parapluies',184,-14);O('trott',188,-62,E);K('rugSquare',300,84,0,.008,null,{carpet:0x8f96a3,carpetDarker:0x6f7785});
 poste(250,-300,0);poste(250,-190,0);K('bookcaseClosedWide',189,-250,E,0,null,NOYER);K('bookcaseClosed',189,-150,E,0,null,NOYER);place(build.printer(),276,-436,0);O('ramettes',310,-438,.1);K('pottedPlant',236,-438);K('trashcan',310,-100);K('coatRackStanding',195,-340);
 // Salle de conférence
-O('tableConf',419,-265,0);[-335,-290,-240,-195].forEach(z=>{K('chairModernCushion',373,z,E,0,null,NAVY);K('chairModernCushion',465,z,W,0,null,NAVY);});K('chairModernCushion',419,-372,0,0,null,NAVY);K('chairModernCushion',419,-158,N,0,null,NAVY);
+O('tableConf',419,-265,0);[-335,-290,-240,-195].forEach(z=>{K('chairModernCushion',373,z,E,0,null,NAVY);K('chairModernCushion',465,z,W,0,null,NAVY);});K('chairModernFrameCushion',419,-372,0,0,null,NAVY);K('chairModernFrameCushion',419,-158,N,0,null,NAVY);O('flipchart',362,-412,.8);O('horloge',502,-265,W,1.95);O('balance',419,-196,.3,.762);
 K('televisionModern',342,-265,E,.9);K('pottedPlant',490,-436);K('sideTableDrawers',345,-110,E,0,null,NOYER);K('kitchenCoffeeMachine',345,-110,E,.61);K('laptop',419,-300,W,.762);K('books',419,-230,.4,.762);
 // Bureaux 1, 2 et 3
-poste(628,-330,0);K('chairCushion',600,-275,N,0,null,NAVY);K('chairCushion',656,-275,N,0,null,NAVY);K('bookcaseClosedWide',533,-360,E,0,null,NOYER);K('bookcaseClosedWide',533,-270,E,0,null,NOYER);K('rugSquare',628,-190,0,.008,null,{carpet:0x8f96a3,carpetDarker:0x6f7785});
+poste(628,-330,0);K('chairCushion',600,-275,N,0,null,NAVY);K('chairCushion',656,-275,N,0,null,NAVY);K('bookcaseClosedWide',533,-360,E,0,null,NOYER);K('bookcaseClosedWide',533,-270,E,0,null,NOYER);K('rugRectangle',628,-190,0,.008,null,{carpet:0x8f96a3,carpetDarker:0x6f7785});O('globe',702,-418,.6);
 K('pottedPlant',722,-436);K('lampRoundFloor',535,-100);K('coatRackStanding',540,-190);K('loungeChair',600,-150,N+.4,0,null,NAVY);
-poste(880,-340,0);K('chairCushion',852,-285,N,0,null,NAVY);K('chairCushion',908,-285,N,0,null,NAVY);K('bookcaseClosedWide',754,-350,E,0,null,NOYER);K('bookcaseClosed',754,-250,E,0,null,NOYER);K('loungeSofa',860,-172,N,0,null,NAVY);K('tableCoffeeSquare',860,-225,0,0,null,NOYER);K('pottedPlant',1012,-436);
-poste(1150,-340,0);K('chairCushion',1122,-285,N,0,null,NAVY);K('chairCushion',1178,-285,N,0,null,NAVY);K('bookcaseClosedWide',1045,-330,E,0,null,NOYER);K('loungeChair',1200,-190,N+.3,0,null,NAVY);K('sideTable',1140,-178,0,0,null,NOYER);K('pottedPlant',1238,-436);K('lampSquareFloor',1238,-165);
+poste(880,-340,0);K('chairCushion',852,-285,N,0,null,NAVY);K('chairCushion',908,-285,N,0,null,NAVY);K('bookcaseClosedWide',754,-350,E,0,null,NOYER);K('bookcaseClosed',754,-250,E,0,null,NOYER);K('loungeSofa',860,-172,N,0,null,NAVY);K('tableCoffee',860,-225,0,0,null,NOYER);K('loungeSofaOttoman',795,-205,.2,0,null,NAVY);O('balance',860,-225,.4,.44);K('cardboardBoxClosed',762,-172,.2);K('cardboardBoxClosed',762,-172,.6,.56);K('pottedPlant',1012,-436);
+poste(1150,-340,0);K('chairCushion',1122,-285,N,0,null,NAVY);K('chairCushion',1178,-285,N,0,null,NAVY);K('bookcaseClosedWide',1045,-330,E,0,null,NOYER);K('loungeChair',1200,-190,N+.3,0,null,NAVY);K('sideTable',1140,-178,0,0,null,NOYER);K('pottedPlant',1238,-436);K('lampSquareFloor',1238,-165);O('globe',1052,-422,2.2);
 // Open-space, couloir
-[900,1020,1140].forEach(x=>{poste(x,-62,0);poste(x,-22,PI);});K('bookcaseOpenLow',1010,61,N,0,null,NOYER);K('bookcaseOpenLow',1060,61,N,0,null,NOYER);K('pottedPlant',1238,60);K('pottedPlant',818,-130);place(build.printer(),1232,-125,W);K('trashcan',830,55);
-K('bookcaseClosedWide',575,-62,0,0,null,NOYER);K('bookcaseClosed',650,-62,0,0,null,NOYER);O('fontaine',529,100,E);K('pottedPlant',790,-62);K('benchCushion',555,130,N,0,null,NAVY);K('trashcan',600,-60);
+[900,1020,1140].forEach(x=>{poste(x,-62,0);poste(x,-22,PI);});K('bookcaseOpenLow',1010,61,N,0,null,NOYER);K('bookcaseClosedDoors',1068,61,N,0,null,NOYER);K('pottedPlant',1238,60);K('pottedPlant',818,-130);place(build.printer(),1232,-125,W);K('trashcan',830,55);
+K('bookcaseClosedWide',575,-62,0,0,null,NOYER);K('bookcaseClosed',650,-62,0,0,null,NOYER);O('fontaine',529,100,E);K('pottedPlant',790,-62);K('benchCushion',555,130,N,0,null,NAVY);
 // Bureau 4, réduit, cafétéria, salle d'attente, dépôt
 poste(1150,190,-PI/2);K('chairCushion',1095,170,E,0,null,NAVY);K('chairCushion',1095,212,E,0,null,NAVY);K('bookcaseClosedWide',1100,277,N,0,null,NOYER);K('pottedPlant',1238,95);K('lampRoundFloor',975,278);
-O('etagere',823,225,E);O('etagere',940,225,W);K('cardboardBoxClosed',880,270,.2);K('cardboardBoxClosed',865,275,-.3);K('cardboardBoxClosed',872,272,.4,.56);O('ramettes',900,278);O('echelle',842,276,E);K('trashcan',915,272);
+O('etagere',823,225,E);O('etagere',940,225,W);K('cardboardBoxClosed',884,272,.2);K('cardboardBoxClosed',884,272,.5,.56);O('echelle',848,276,E);
 [['kitchenCabinet',170],['kitchenSink',212],['kitchenCabinetDrawer',254]].forEach(q=>{const o=K(q[0],536,q[1],E,0,null,NOYER);o.scale.set(1,1,.7);});K('kitchenCoffeeMachine',536,170,E,.9);K('kitchenMicrowave',536,254,E,.9);K('kitchenFridge',600,276,N);
-K('tableRound',700,222,0,0,null,NOYER);K('chair',700,172,0);K('chair',700,272,N);K('chair',652,222,E);K('chair',748,222,W);K('pottedPlant',790,280);K('trashcan',575,280);O('tasse',690,215,1,.73);O('tasse',712,230,3,.73,null,0x2b2b2e);
-K('loungeSofa',446,270,N,0,null,NAVY);K('tableCoffeeSquare',446,215,0,0,null,NOYER);K('books',446,214,.3,.44);K('chairCushion',486,185,W,0,null,NAVY);K('pottedPlant',492,160);
-O('etagere',259,180,W);O('etagere',259,240,W);K('cardboardBoxClosed',200,165,.1);K('cardboardBoxClosed',215,170,-.2);K('cardboardBoxClosed',207,167,.3,.56);O('ramettes',235,160);
+K('tableRound',700,222,0,0,null,NOYER);K('chair',700,172,0);K('chair',700,272,N);K('chair',748,222,W);K('stoolBar',580,196,W);K('stoolBar',580,234,W);O('tasse',690,215,1,.73);O('tasse',712,230,3,.73,null,0x2b2b2e);
+K('loungeSofa',446,270,N,0,null,NAVY);K('tableCoffeeGlass',446,215,0,0,null,NOYER);K('books',446,214,.3,.44);K('pottedPlant',492,160);
+O('etagere',259,200,W);K('cardboardBoxClosed',200,165,.1);K('cardboardBoxClosed',200,165,.5,.56);O('ramettes',232,160);
 
 /* ---------- chaussures : une silhouette de profil extrudée, affinée vers la pointe et le talon ---------- */
 const SM=(c,o)=>M(c,Object.assign({roughness:.75},o||{}));
@@ -1076,7 +1095,7 @@ const NAMES={officeChair:'Siège de bureau',confChair:'Chaise de réunion',starC
   'k:laptop':'Ordinateur portable','k:coatRackStanding':'Portemanteau','k:kitchenCoffeeMachine':'Machine à café','k:kitchenMicrowave':'Micro-ondes','k:kitchenFridgeSmall':'Frigo','k:kitchenBlender':'Mixeur','k:toaster':'Grille-pain','k:speaker':'Enceinte',
   'k:speakerSmall':'Petite enceinte','k:radio':'Radio','k:televisionVintage':'Vieille télé','k:televisionModern':'Télévision','k:pillow':'Coussin','k:pillowBlue':'Coussin','k:rugRound':'Tapis','k:rugRectangle':'Tapis','k:rugDoormat':'Paillasson','k:bear':'Ours en peluche',
   'k:bench':'Banc','k:benchCushion':'Banc','o:extincteur':'Extincteur','o:fontaine':'Fontaine à eau','o:ballon':'Ballon de gym','o:panneau':'Panneau sol glissant','o:sac':'Sac à dos','o:tasse':'Tasse','o:ramettes':'Ramettes de papier','o:cone':'Cône de chantier',
-  'o:skate':'Skateboard','o:rollup':'Roll-up Boomerang','o:flipchart':'Tableau de conférence','o:plante':'Plante en pot','o:casier':'Casier','o:etagere':'Étagère de stockage','o:palette':'Palette de cartons','o:echelle':'Escabeau','o:armoireElec':'Armoire électrique','o:tableConf':'Table de conférence','o:tableau':'Tableau','o:stylo':'Stylo',
+  'o:skate':'Skateboard','o:rollup':'Roll-up Boomerang','o:flipchart':'Tableau de conférence','o:plante':'Plante en pot','o:casier':'Casier','o:etagere':'Étagère de stockage','o:palette':'Palette de cartons','o:echelle':'Escabeau','o:armoireElec':'Armoire électrique','o:tableConf':'Table de conférence','o:tableau':'Tableau','o:stylo':'Stylo','o:trott':'Trottinette','o:horloge':'Horloge','o:globe':'Globe terrestre','o:parapluies':'Porte-parapluies','o:balance':'Balance de justice',
   'k:desk':'Bureau','k:deskCorner':"Bureau d'angle",'k:table':'Table','k:tableCross':'Table','k:bookcaseClosed':'Armoire à dossiers','k:bookcaseClosedWide':'Grande armoire','k:kitchenCabinet':'Meuble de cuisine','k:kitchenCabinetDrawer':'Meuble à tiroirs','k:kitchenSink':'Évier','k:kitchenBar':'Comptoir',
   'k:kitchenFridge':'Grand frigo','k:toilet':'WC','k:bathroomSink':'Lavabo','k:bathroomMirror':'Miroir','k:shower':'Douche','k:bathroomCabinet':'Meuble de salle de bain','k:washer':'Lave-linge','k:rugSquare':'Tapis','k:lampWall':'Applique'};
 furn.updateMatrixWorld(true);
@@ -1084,10 +1103,10 @@ SHOES.forEach((sh,n)=>{NAMES['o:shoe'+n]=sh[0];});
 const items=[],box=new THREE.Box3(),sz=new THREE.Vector3(),ctr=new THREE.Vector3(),wp=new THREE.Vector3();
 (function collect(o,opt){if(o===OPT1)opt=1;else if(o===OPT2)opt=2;
   if(o.userData.kind){const i=items.length;o.userData.item=i;
-    const t=o.clone(true);t.position.set(0,0,0);t.rotation.set(0,0,0);t.updateMatrixWorld(true);box.setFromObject(t);box.getSize(sz);box.getCenter(ctr);   // gabarit : l'objet seul, dans son propre repère
+    const t=o.clone(true);t.position.set(0,0,0);t.rotation.set(0,0,0);t.updateMatrix();t.updateMatrixWorld(true);box.setFromObject(t);box.getSize(sz);box.getCenter(ctr);   // gabarit : l'objet seul, dans son propre repère
     o.getWorldPosition(wp);const e=o.matrixWorld.elements,vol=sz.x*sz.y*sz.z;let dr=-1;for(let q=o.parent;q;q=q.parent)if(q.userData.drawer!=null){dr=q.userData.drawer;break;}
     items.push({i,obj:o,kind:o.userData.kind,name:NAMES[o.userData.kind]||'Objet',opt:opt||0,x:wp.x,y:wp.y,z:wp.z,ry:Math.atan2(e[8],e[10]),w:sz.x,h:sz.y,d:sz.z,cx:ctr.x,cz:ctr.z,y0:box.min.y,
-      r:Math.min(.42,Math.max(.1,Math.min(sz.x,sz.z)/2*.9)),hp:vol<.03?1:vol<.45?2:3,soft:/^(o:plante|planter|trellis|sepVeg|bigPlant)$/.test(o.userData.kind)||(Math.max(sz.x,sz.z)<1.05&&!/copier|shredder|serverRack|abaUnit|screenPanel|slash|fontaine|kitchenFridge|casier|armoireElec|toilet|bathroomSink|kitchenCabinet|kitchenSink|bookcaseClosed|k:desk/.test(o.userData.kind)),taken:null,drawer:dr,wall:/^o:tableau$|bathroomMirror/.test(o.userData.kind)});
+      r:Math.min(.42,Math.max(.1,Math.min(sz.x,sz.z)/2*.9)),hp:vol<.03?1:vol<.45?2:3,soft:/^(o:plante|planter|trellis|sepVeg|bigPlant)$/.test(o.userData.kind)||(Math.max(sz.x,sz.z)<1.05&&!/copier|shredder|serverRack|abaUnit|screenPanel|slash|fontaine|kitchenFridge|casier|armoireElec|toilet|bathroomSink|kitchenCabinet|kitchenSink|bookcaseClosed|k:desk/.test(o.userData.kind)),taken:null,drawer:dr,wall:/^o:(tableau|horloge)$|bathroomMirror/.test(o.userData.kind)});
     o.traverse(m=>{if(m.isMesh){m.userData.item=i;}});return;}
   o.children.forEach(c=>collect(c,opt));})(furn,0);
 furn.traverse(o=>{o.matrixAutoUpdate=false;o.updateMatrix();});furn.updateMatrixWorld(true);
@@ -1362,7 +1381,7 @@ P.W={navMap,rand,clamp,items,fixed,blockedAt,groundAt,move,unstick,drawers,setDr
 const $=id=>document.getElementById(id),P=window.PH,W=P&&P.W;
 if(!W){$('err').hidden=false;return;}
 const {THREE,X,Z,PI,H,renderer,scene,camera,canvas,items}=P,{clamp,rand}=W;
-const MAXP=10,END=12000,MAG=6,RESERVE=24,RELOAD=1.5,FIRE=.3,LIVES=3,ERRS=3,DECOYS=3,BOOST=2.5,BOOST_CD=9,EYE_S=1.62,EYE_C=1.02,SENS=.0023,TAUNT=40;
+const MAXP=10,END=12000,MAG=6,RESERVE=24,RELOAD=1.5,FIRE=.3,LIVES=3,ERRS=3,DECOYS=3,XFORMS=5,BOOST=2.5,BOOST_CD=9,EYE_S=1.62,EYE_C=1.02,SENS=.0023,TAUNT=40;
 const r2=v=>Math.round(v*100)/100,r3=v=>Math.round(v*1000)/1000,esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 const angDiff=(a,b)=>((a-b+PI)%(2*PI)+2*PI)%(2*PI)-PI,angTo=(a,b,max)=>a+clamp(angDiff(b,a),-max,max);
@@ -1372,7 +1391,7 @@ const G={joined:false,away:false,name:'',joinT:0,view:'',locked:false,everLocked
   ready:false,force:false,g:{n:0,k:0,ph:'lobby',pl:[],hu:[],win:0,hd:240,pd:30,zn:3,opt:1,bn:0,solo:0},set:{opt:0,pd:30,hd:240,zone:0,solo:0},shDirty:true,shAt:0,shKey:''};
 const me={pos:new THREE.Vector3(X(600),0,Z(520)),y:0,vy:0,vx:0,vz:0,yaw:0,pitch:0,eye:EYE_S,speed:0,bob:0,role:0,round:-1,alive:false,crouch:false,sprint:false,
   ammo:MAG,reserve:RESERVE,reloadEnd:0,nextShot:0,lives:LIVES,errs:0,wrongs:0,found:0,
-  onG:true,ox:0,oz:0,form:-1,ry:0,lock:false,took:-1,hp:2,hpMax:2,decoys:[],decoySeq:0,decoyLeft:DECOYS,boostEnd:0,boostAt:0,xfAt:0,nextTaunt:0,tauntSeq:0,tauntKind:0,tauntAt:0,surv:0,
+  onG:true,ox:0,oz:0,form:-1,ry:0,lock:false,took:-1,hp:2,hpMax:2,decoys:[],decoySeq:0,decoyLeft:DECOYS,xfLeft:XFORMS,boostEnd:0,boostAt:0,xfAt:0,nextTaunt:0,tauntSeq:0,tauntKind:0,tauntAt:0,surv:0,
   score:0,rs:0,hc:0,shots:[],shotSeq:0,claims:[],claimSeq:0,deathSeq:0,killer:'',av:W.makeProp()};
 
 /* ---------- touches : chaque action a sa touche, que l'on peut changer ---------- */
@@ -1531,7 +1550,7 @@ function enterPhase(){const g=G.g,mine=g.pl.includes(net.me);if(P.opt()!==g.opt)
 /* salle d'attente, et vue de ceux qui arrivent en cours de manche : les bureaux vus d'en haut, sans les joueurs */
 function waitView(){setView('inter');$('click').hidden=true;$('end').hidden=G.g.ph!=='end';if(document.pointerLockElement)document.exitPointerLock();setPaused(false);}
 function resetRound(role){const g=G.g,A=actives(),k=Math.max(0,A.findIndex(a=>a.peer===net.me));
-  me.role=role;me.round=g.n;me.alive=role!==3;me.form=-1;me.took=-1;me.lock=false;me.hp=me.hpMax=W.BUDDY.hp;me.decoys=[];me.decoyLeft=DECOYS;me.ammo=MAG;me.reserve=RESERVE;me.reloadEnd=0;me.nextShot=0;me.lives=LIVES;me.errs=0;me.wrongs=0;me.found=0;
+  me.role=role;me.round=g.n;me.alive=role!==3;me.form=-1;me.took=-1;me.lock=false;me.hp=me.hpMax=W.BUDDY.hp;me.decoys=[];me.decoyLeft=DECOYS;me.xfLeft=XFORMS;me.ammo=MAG;me.reserve=RESERVE;me.reloadEnd=0;me.nextShot=0;me.lives=LIVES;me.errs=0;me.wrongs=0;me.found=0;
   me.y=0;me.vy=0;me.onG=true;me.ox=me.oz=0;W.clearMarks(me.av);me.vx=me.vz=0;me.boostEnd=0;me.boostAt=0;me.rs=0;me.surv=0;me.crouch=false;me.shots=[];me.claims=[];
   const s=role===2?W.spawnAt(W.HUNT_SPAWNS,k):role===1?W.spawnAt(zoneSpawns(),k*5+g.n*3):{x:P.CX,z:P.CZ};me.pos.set(s.x,0,s.z);me.yaw=role===2?-PI/2:Math.atan2(-(P.CX-s.x),-(P.CZ-s.z));me.pitch=role===1?-.25:0;me.ry=me.yaw+PI;
   if(role===2)me.hc++;W.setForm(me.av,-1);syncDecoys(net.me,[],false);$('end').hidden=true;$('feed').innerHTML='';setView('play');cardKey='';}
@@ -1664,9 +1683,11 @@ let target=-1,targetAt=0;
 function findTarget(){if(me.role!==1||!me.alive){target=-1;return;}camera.getWorldDirection(vD);const res=W.castAll(camera.position,vD,14,null);target=-1;
   if(res.type==='item'){const it=items[res.item];if(Math.hypot(it.px-me.pos.x,it.pz-me.pos.z)<4.6&&res.item!==me.took)target=res.item;}}
 function transform(i,take,t){const it=items[i];if(!it||t<me.xfAt)return;if(take&&it.taken&&it.taken!==net.me){note('Quelqu\'un a déjà pris cette place.');return;}
-  const frac=me.hp/me.hpMax;me.form=i;me.hpMax=it.hp;me.hp=Math.max(1,Math.round(it.hp*frac));me.xfAt=t+.35;
+  if(i===me.form&&!take)return;
+  if(me.xfLeft<=0){note('Plus de déguisement : '+XFORMS+' par manche au maximum.');W.sfx('empty');me.xfAt=t+.6;return;}   // cinq changements par manche, pour ne pas sauter d'objet en objet sans fin
+  me.xfLeft--;const frac=me.hp/me.hpMax;me.form=i;me.hpMax=it.hp;me.hp=Math.max(1,Math.round(it.hp*frac));me.xfAt=t+.35;
   me.ox=me.oz=0;if(take){me.took=i;itemPos(it,tmpV);me.pos.x=tmpV.x;me.pos.z=tmpV.z;me.y=tmpV.y;me.vy=0;me.vx=me.vz=0;me.ry=it.ry;me.lock=true;me.onG=false;}else{me.took=-1;W.unstick(me.pos,it.r,me.y);}
-  W.setForm(me.av,i);W.sfx('pop');tmpV.set(me.pos.x,me.y+it.h*.5,me.pos.z);W.burst(tmpV,W.DUST,6,null,.4);cardKey='';G.shDirty=true;}
+  W.setForm(me.av,i);W.sfx('pop');if(me.xfLeft<=1)note(me.xfLeft?'Encore un seul déguisement pour cette manche.':'Dernier déguisement utilisé.');tmpV.set(me.pos.x,me.y+it.h*.5,me.pos.z);W.burst(tmpV,W.DUST,6,null,.4);cardKey='';G.shDirty=true;}
 function dropDecoy(){if(me.form<0){note('Déguisez-vous d\'abord en objet.');return;}if(me.decoyLeft<=0){note('Vous n\'avez plus de leurre.');return;}
   me.decoyLeft--;me.decoySeq++;me.decoys=me.decoys.concat([[me.decoySeq,me.form,r2(me.pos.x),r2(me.y),r2(me.pos.z),r3(me.ry)]]);syncDecoys(net.me,me.decoys,false);W.sfx('decoy');note('Leurre posé.');}
 /* narguer : un bruit au hasard (sifflet, pouet, coin-coin, rire, boing) que tout le monde entend depuis l'endroit où l'on se cache */
@@ -1711,7 +1732,7 @@ function drawBoard(end){const A=rows(),h=A.map((r,i)=>'<div class="row'+(r.me?' 
 let cardKey='',hudKey='',hudAt=0,lastTimer='';
 function drawCard(){const key=me.role+':'+(me.alive?1:0);if(key===cardKey)return;cardKey=key;const c=$('card');
   if(me.role===2&&me.alive)c.innerHTML='<div class="big" id="ammoBig"><b id="ammoN"></b><span>/ '+MAG+' · réserve <b id="resN"></b></span></div><div class="bar"><i id="ammoBar"></i></div><div class="line"><span>Vies</span><div class="pips" id="lives"></div></div><div class="line"><span>Erreurs</span><div class="pips err" id="errs"></div></div><small id="hint"></small>';
-  else if(me.role===1&&me.alive)c.innerHTML='<div id="formName"></div><div class="line"><span>Résistance</span><div class="pips" id="hpP"></div></div><div class="line"><span>Leurres</span><div class="pips" id="decP"></div></div><div class="line"><span>Accélération</span><span id="lockT"></span></div><div class="bar"><i id="boostBar"></i></div><small id="hint"></small>';
+  else if(me.role===1&&me.alive)c.innerHTML='<div id="formName"></div><div class="line"><span>Résistance</span><div class="pips" id="hpP"></div></div><div class="line"><span>Déguisements</span><div class="pips" id="xfP"></div></div><div class="line"><span>Leurres</span><div class="pips" id="decP"></div></div><div class="line"><span>Accélération</span><span id="lockT"></span></div><div class="bar"><i id="boostBar"></i></div><small id="hint"></small>';
   else c.innerHTML='<div id="formName">Spectateur</div><small>Vous regardez la fin de la manche. Déplacez-vous librement : les murs ne vous arrêtent plus.</small>';}
 function drawHud(t,now){const g=G.g,tm=mmss(G.phEnd-now);if(tm!==lastTimer){lastTimer=tm;$('timer').textContent=tm;if(g.ph==='prep'){$('waitN').textContent=Math.max(0,Math.ceil((G.phEnd-now)/1000));if(G.phEnd-now<5200&&G.phEnd-now>0)W.sfx('tick');}}
   const c=$('cross');c.style.left=(G.free?G.cur.x*100:50)+'%';c.style.top=(G.free?G.cur.y*100:50)+'%';
@@ -1725,9 +1746,9 @@ function drawHud(t,now){const g=G.g,tm=mmss(G.phEnd-now);if(tm!==lastTimer){last
   const use=[];
   if(me.role===2&&me.alive){$('ammoN').textContent=me.ammo;$('resN').textContent=me.reserve;$('ammoBig').classList.toggle('low',me.ammo<=1);pips('lives',me.lives,LIVES);pips('errs',me.errs,ERRS);
     $('hint').textContent=g.ph==='prep'?'Le pistolet se débloque à l\'ouverture de la chasse.':me.reloadEnd?'Rechargement…':me.ammo===0?(me.reserve?keyLabel(bind.reload)+' pour recharger':'Plus de munitions : trouvez un objet pour en regagner'):'Clic droit pour viser';}
-  if(me.role===1&&me.alive){$('formName').textContent=me.form>=0?items[me.form].name:'Petit bonhomme';pips('hpP',me.hp,me.hpMax);pips('decP',me.decoyLeft,DECOYS);$('lockT').textContent=me.took>=0?'À la place de l\'objet':me.lock?'Rotation bloquée':'';
+  if(me.role===1&&me.alive){$('formName').textContent=me.form>=0?items[me.form].name:'Petit bonhomme';pips('hpP',me.hp,me.hpMax);pips('decP',me.decoyLeft,DECOYS);pips('xfP',me.xfLeft,XFORMS);$('lockT').textContent=me.took>=0?'À la place de l\'objet':me.lock?'Rotation bloquée':'';
     $('hint').textContent=me.form<0?'Visez un objet, puis '+keyLabel(bind.use)+' pour vous déguiser.':keyLabel(bind.jump)+' sauter sur les meubles · '+keyLabel(bind.special)+' leurre · '+keyLabel(bind.rotate)+' pivoter · clic droit bloquer · '+keyLabel(bind.whistle)+' narguer';
-    if(target>=0){const it=items[target];use.push('<span>'+esc(keyLabel(bind.use))+' : devenir '+esc(it.name.toLowerCase())+'</span>');if(!it.taken)use.push('<span class="alt">'+esc(keyLabel(bind.take))+' : prendre sa place</span>');}}
+    if(target>=0&&me.xfLeft<=0)use.push('<span class="alt">Plus de déguisement pour cette manche</span>');else if(target>=0){const it=items[target];use.push('<span>'+esc(keyLabel(bind.use))+' : devenir '+esc(it.name.toLowerCase())+'</span>');if(!it.taken)use.push('<span class="alt">'+esc(keyLabel(bind.take))+' : prendre sa place</span>');}}
   aimDr=findDrawer();if(aimDr>=0&&!use.length)use.push('<span>'+esc(keyLabel(bind.use))+' : '+(W.drawers[aimDr].open?'fermer':'ouvrir')+' le tiroir</span>');
   if(me.alive&&me.role!==3&&!use.length){const di=nearDoor(me.pos,1.7);
     if(di>=0)use.push('<span'+(doorLocked(di)?' class="alt"':'')+'>'+(zoneDoor(di)?'Zone fermée pour cette manche':doorLocked(di)?'Porte verrouillée pendant le compte à rebours':esc(keyLabel(bind.use))+' : '+(W.doors[di].isOpen?'fermer ':'ouvrir ')+esc(W.doors[di].name))+'</span>');}
