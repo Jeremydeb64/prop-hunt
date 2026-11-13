@@ -259,7 +259,7 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
   <section class="tab" data-panel="how">
     <ol id="steps"><li><b>On se cache</b>Les objets ont <span data-show="pd">30 s</span> pour se déguiser.</li><li><b>On cherche</b>Les chasseurs ont <span data-show="hd">4 min</span> pour les trouver.</li><li><b>On échange</b>Les rôles tournent à chaque manche.</li></ol>
     <div class="rolecard"><h2>Objet.</h2><p>Devenez un objet du décor et tenez jusqu'à la fin du temps.</p>
-      <dl class="keys"><dt><kbd data-key="use">E</kbd></dt><dd>Devenir la copie de l'objet visé</dd><dt><kbd data-key="take">Q</kbd></dt><dd>Prendre sa place exacte, l'original disparaît</dd><dt><kbd>5</kbd></dt><dd>Déguisements par manche, pas un de plus</dd><dt><kbd data-key="special">F</kbd></dt><dd>Poser un leurre, 3 par manche</dd>
+      <dl class="keys"><dt><kbd data-key="use">E</kbd></dt><dd>Devenir la copie de l'objet visé : un objet en plus, l'original reste à sa place</dd><dt><kbd>5</kbd></dt><dd>Déguisements par manche, pas un de plus</dd><dt><kbd data-key="special">F</kbd></dt><dd>Poser un leurre, 3 par manche</dd>
         <dt><kbd data-key="rotate">R</kbd></dt><dd>Pivoter ; le clic droit bloque la rotation</dd><dt><kbd data-key="whistle">G</kbd></dt><dd>Narguer le chasseur d'un petit bruit, 15 points</dd><dt><kbd data-key="run">Shift</kbd></dt><dd>Accélérer un court instant</dd><dt><kbd data-key="jump">Espace</kbd></dt><dd>Sauter, y compris sur les meubles. En tableau, on se colle au mur le plus proche</dd></dl></div>
     <div class="rolecard"><h2>Chasseur.</h2><p>Trouvez les joueurs déguisés. Trois tirs sur de vrais objets ou des leurres coûtent une vie ; vous en avez trois.</p>
       <dl class="keys"><dt>Clic gauche</dt><dd>Tirer, 6 coups par chargeur. Le tir laisse une tache de votre couleur</dd><dt>Clic droit</dt><dd>Viser</dd><dt><kbd data-key="reload">R</kbd></dt><dd>Recharger</dd><dt><kbd data-key="run">Shift</kbd></dt><dd>Courir</dd><dt><kbd data-key="crouch">C</kbd></dt><dd>S'accroupir</dd></dl></div>
@@ -2003,7 +2003,7 @@ const me={pos:new THREE.Vector3(X(600),0,Z(520)),y:0,vy:0,vx:0,vz:0,yaw:0,pitch:
 
 /* ---------- touches : chaque action a sa touche, que l'on peut changer ---------- */
 const ACTIONS=[['fwd','Avancer','KeyW'],['back','Reculer','KeyS'],['left','Aller à gauche','KeyA'],['right','Aller à droite','KeyD'],['jump','Sauter','Space'],['run','Courir, ou accélérer quand on est un objet','ShiftLeft'],
-  ['crouch','S\'accroupir (chasseur)','KeyC'],['use','Se déguiser, ouvrir une porte, actionner un interrupteur','KeyE'],['take','Prendre la place d\'un objet','KeyQ'],['special','Poser un leurre','KeyF'],['rotate','Pivoter (objet)','KeyR'],
+  ['crouch','S\'accroupir (chasseur)','KeyC'],['use','Se déguiser, ouvrir une porte, actionner un interrupteur','KeyE'],['special','Poser un leurre','KeyF'],['rotate','Pivoter (objet)','KeyR'],
   ['reload','Recharger (chasseur)','KeyR'],['whistle','Narguer le chasseur (objet)','KeyG'],['scores','Classement','Tab'],['mute','Couper le son','KeyM']];
 const bind={};let layout=null,waitBind=null;
 {let saved={};try{saved=JSON.parse(store.get('ph-keys')||'{}')||{};}catch(e){}ACTIONS.forEach(a=>{bind[a[0]]=typeof saved[a[0]]==='string'?saved[a[0]]:a[2];});}
@@ -2090,7 +2090,7 @@ function newRemote(peer){return{peer,pres:null,at:0,fresh:true,name:'',j:0,st:0,
 const live=R=>R.st>0&&performance.now()-R.at<6000;
 function ingest(R,pr,t){R.at=performance.now();
   const name=String(pr.n||'Joueur').slice(0,14);if(name!==R.name){R.name=name;if(R.hav)R.hav.nt.set(name,'#ed1b54');if(R.pav)R.pav.nt.set(name,'#ffffff');}
-  R.st=pr.st|0;R.aw=pr.aw|0;R.rd=pr.rd|0;R.j=+pr.j||0;R.ro=pr.ro|0;R.al=pr.al|0;R.cr=pr.cr|0;R.hp=pr.hp|0;R.lv=pr.lv|0;R.er=pr.er|0;R.sc=pr.sc|0;R.rs=pr.rs|0;R.hc=pr.hc|0;R.fd=pr.fd|0;R.set=cleanSet(pr.as);R.ad=R.set?1:0;R.fc=pr.fc|0;R.tk=Number.isFinite(pr.tk)?pr.tk|0:-1;
+  R.st=pr.st|0;R.aw=pr.aw|0;R.rd=pr.rd|0;R.j=+pr.j||0;R.ro=pr.ro|0;R.al=pr.al|0;R.cr=pr.cr|0;R.hp=pr.hp|0;R.lv=pr.lv|0;R.er=pr.er|0;R.sc=pr.sc|0;R.rs=pr.rs|0;R.hc=pr.hc|0;R.fd=pr.fd|0;R.set=cleanSet(pr.as);R.ad=R.set?1:0;R.fc=pr.fc|0;R.tk=-1;   /* on ne prend plus la place d'un objet : on en devient une copie en plus, l'original reste toujours en place */
   const f=Number.isFinite(pr.f)&&items[pr.f|0]?pr.f|0:-1;if(f!==R.f){R.f=f;if(!R.fresh&&R.ro===1&&R.al)W.sfx('pop',R);}
   if(Array.isArray(pr.p)&&pr.p.length===3&&pr.p.every(Number.isFinite)){R.snaps.push({t,x:clamp(pr.p[0],-6,25),y:clamp(pr.p[1],0,2.6),z:clamp(pr.p[2],-11,11),yaw:+pr.y||0,pitch:clamp(+pr.t||0,-1.4,1.4),ry:+pr.ry||0});if(R.snaps.length>24)R.snaps.shift();}
   if(Array.isArray(pr.s)){let mx=R.shotSeq;for(const s of pr.s){if(!Array.isArray(s)||s.length<8||!s.slice(0,8).every(Number.isFinite))continue;const q=s[0]|0;if(q>mx)mx=q;if(!R.fresh&&q>R.shotSeq)remoteShot(R,s);}R.shotSeq=mx;}
@@ -2306,7 +2306,7 @@ function controlHunter(dt,t){const K=G.keys;
 let target=-1,targetAt=0;
 function findTarget(){if(me.role!==1||!me.alive){target=-1;return;}camera.getWorldDirection(vD);const res=W.castAll(camera.position,vD,14,null);target=-1;
   if(res.type==='item'){const it=items[res.item];if(Math.hypot(it.px-me.pos.x,it.pz-me.pos.z)<4.6&&res.item!==me.took)target=res.item;}}
-function transform(i,take,t){const it=items[i];if(!it||t<me.xfAt)return;if(take&&it.taken&&it.taken!==net.me){note('Quelqu\'un a déjà pris cette place.');return;}
+function transform(i,take,t){take=false;const it=items[i];if(!it||t<me.xfAt)return;if(take&&it.taken&&it.taken!==net.me){note('Quelqu\'un a déjà pris cette place.');return;}
   if(i===me.form&&!take)return;
   if(me.xfLeft<=0){note('Plus de déguisement : '+XFORMS+' par manche au maximum.');W.sfx('empty');me.xfAt=t+.6;return;}   // cinq changements par manche, pour ne pas sauter d'objet en objet sans fin
   me.xfLeft--;const frac=me.hp/me.hpMax;me.form=i;me.hpMax=it.hp;me.hp=Math.max(1,Math.round(it.hp*frac));me.xfAt=t+.35;
@@ -2376,7 +2376,7 @@ function drawHud(t,now){const g=G.g,tm=G.explore?'':mmss(G.phEnd-now);if(tm!==la
     $('hint').textContent=g.ph==='prep'?'Le pistolet se débloque à l\'ouverture de la chasse.':me.reloadEnd?'Rechargement…':me.ammo===0?(me.reserve?keyLabel(bind.reload)+' pour recharger':'Plus de munitions : trouvez un objet pour en regagner'):'Clic droit pour viser';}
   if(me.role===1&&me.alive){$('formName').textContent=me.form>=0?items[me.form].name:'Petit bonhomme';pips('hpP',me.hp,me.hpMax);pips('decP',me.decoyLeft,DECOYS);pips('xfP',me.xfLeft,XFORMS);$('lockT').textContent=me.took>=0?'À la place de l\'objet':me.lock?'Rotation bloquée':'';
     $('hint').textContent=me.form<0?'Visez un objet, puis '+keyLabel(bind.use)+' pour vous déguiser.':keyLabel(bind.jump)+' sauter sur les meubles · '+keyLabel(bind.special)+' leurre · '+keyLabel(bind.rotate)+' pivoter · clic droit bloquer · '+keyLabel(bind.whistle)+' narguer';
-    if(target>=0&&me.xfLeft<=0)use.push('<span class="alt">Plus de déguisement pour cette manche</span>');else if(target>=0){const it=items[target];use.push('<span>'+esc(keyLabel(bind.use))+' : devenir '+esc(it.name.toLowerCase())+'</span>');if(!it.taken)use.push('<span class="alt">'+esc(keyLabel(bind.take))+' : prendre sa place</span>');}}
+    if(target>=0&&me.xfLeft<=0)use.push('<span class="alt">Plus de déguisement pour cette manche</span>');else if(target>=0){const it=items[target];use.push('<span>'+esc(keyLabel(bind.use))+' : devenir '+esc(it.name.toLowerCase())+'</span>');}}
   aimDr=findDrawer();if(aimDr>=0&&!use.length)use.push('<span>'+esc(keyLabel(bind.use))+' : '+(W.drawers[aimDr].open?'fermer':'ouvrir')+' le tiroir</span>');
   if(me.alive&&me.role!==3&&!use.length){const di=nearDoor(me.pos,1.7);
     if(di>=0)use.push('<span'+(doorLocked(di)?' class="alt"':'')+'>'+(zoneDoor(di)?'Zone fermée pour cette manche':doorLocked(di)?'Porte verrouillée pendant le compte à rebours':esc(keyLabel(bind.use))+' : '+(W.doors[di].isOpen?'fermer ':'ouvrir ')+esc(W.doors[di].name))+'</span>');}
@@ -2464,7 +2464,6 @@ addEventListener('keydown',e=>{if(e.ctrlKey)G.ctrlAt=performance.now();
     else if(k==='mute'){G.muted=!G.muted;W.mute(G.muted);note(G.muted?'Son coupé.':'Son rétabli.');}
     else if(G.view!=='play'||!me.alive||me.role===3){}
     else if(k==='use'){if(me.role===1&&target>=0)transform(target,false,t);else if(aimDr>=0)setDw(Dw.mask^(1<<aimDr));else useNear();}
-    else if(k==='take'&&me.role===1&&target>=0)transform(target,true,t);
     else if(k==='special'&&me.role===1)dropDecoy();
     else if(k==='whistle'&&me.role===1)whistle(false);}
   if(/^Arrow/.test(e.code)){G.keys[e.code]=true;used=true;}
