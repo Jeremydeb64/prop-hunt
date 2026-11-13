@@ -95,6 +95,8 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
 #lobText,#lobNote{color:var(--on-carbon-2)}
 #lobNote{font-size:13px}
 #lobNote:empty{display:none}
+#adminZone{display:flex;flex-direction:column;gap:14px;padding-top:14px;border-top:1px solid var(--carbon-line)}
+.coderow{display:flex;gap:8px;align-items:center}.adminCode{flex:1;min-width:0;height:40px;padding:0 14px;border:1px solid var(--field-line);border-radius:var(--r-pill);background:var(--carbon);font-weight:500}.adminLock small{color:var(--on-carbon-2);font-size:13px}.adminLock small.err{color:#ff8fa9}
 #lobSet{display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:1px solid var(--carbon-line)}
 #lobFoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--carbon-line)}
 #lobList .row{background:var(--carbon-2)}
@@ -238,6 +240,7 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
     <div class="field"><span>Durée de la chasse</span><div class="vrow" data-set="hd"><button class="vbtn" data-v="120">2 min</button><button class="vbtn" data-v="180">3 min</button><button class="vbtn" data-v="240">4 min</button><button class="vbtn" data-v="300">5 min</button></div></div>
   </div>
   <p id="lobNote"></p>
+  <div id="lobAdmin"><div class="field adminLock"><label for="adminCode2">Code administrateur</label><div class="coderow"><input id="adminCode2" class="adminCode" type="password" autocomplete="off" spellcheck="false" maxlength="24" placeholder="Code"><button class="cta ghost adminGo" data-for="adminCode2">Déverrouiller</button></div><small class="adminMsg">Les réglages de la partie sont réservés à l'administrateur.</small></div></div>
   <div id="lobFoot"><button class="cta ghost" id="lobQuit">Quitter</button></div>
 </aside>
 
@@ -264,11 +267,15 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
   </section>
   <section class="tab" data-panel="game" hidden>
     <p id="hostNote"></p>
+    <div class="field adminLock"><label for="adminCode1">Code administrateur</label><div class="coderow"><input id="adminCode1" class="adminCode" type="password" autocomplete="off" spellcheck="false" maxlength="24" placeholder="Code"><button class="cta ghost adminGo" data-for="adminCode1">Déverrouiller</button></div><small class="adminMsg">Les réglages de la partie sont réservés à l'administrateur.</small></div>
+    <div id="adminZone" hidden>
     <div class="field"><span>Terrain de jeu</span><div class="vrow" data-set="zone"><button class="vbtn" data-v="0">Automatique</button><button class="vbtn" data-v="1">Bureaux Boomerang</button><button class="vbtn" data-v="2">Avec vestiaires et dépôt</button><button class="vbtn" data-v="3">Tout l'étage</button></div>
       <small>Automatique : les bureaux seuls à 1 ou 2 joueurs, avec les vestiaires et le dépôt à 3 ou 4, tout l'étage à partir de 5. Les portes des parties fermées sont barrées de rouge.</small></div>
     <div class="field"><span>Temps pour se cacher</span><div class="vrow" data-set="pd"><button class="vbtn" data-v="20">20 s</button><button class="vbtn" data-v="30">30 s</button><button class="vbtn" data-v="45">45 s</button></div></div>
     <div class="field"><span>Durée de la chasse</span><div class="vrow" data-set="hd"><button class="vbtn" data-v="120">2 min</button><button class="vbtn" data-v="180">3 min</button><button class="vbtn" data-v="240">4 min</button><button class="vbtn" data-v="300">5 min</button></div></div>
     <div class="field"><span>Implantation des bureaux Boomerang</span><div class="vrow" data-set="opt"><button class="vbtn" data-v="0">Alterner</button><button class="vbtn" data-v="1">Option 1</button><button class="vbtn" data-v="2">Option 2</button></div></div>
+    <div><button class="cta ghost" id="adminOff">Quitter le mode administrateur</button></div>
+    </div>
     <div class="field"><span>Seul, contre les robots, vous jouez</span><div class="vrow" data-set="solo"><button class="vbtn" data-v="0">Chaque rôle à son tour</button><button class="vbtn" data-v="2">Chasseur</button><button class="vbtn" data-v="1">Objet</button></div></div>
   </section>
   <section class="tab" data-panel="prefs" hidden>
@@ -2051,6 +2058,15 @@ async function initNet(){const local=/^(localhost|127\.0\.0\.1)$/.test(location.
   G.netReady=true;G.netAt=performance.now();}
 
 /* ---------- portes : un état commun, la modification la plus récente l'emporte. La lumière, elle, reste allumée en plein jour. ---------- */
+/* ---------- administrateur : une seule personne règle la partie ----------
+   Le code administrateur déverrouille les réglages. Dès que l'administrateur est dans la salle d'attente, ce sont ses réglages qui s'appliquent,
+   quel que soit le poste qui fait tourner la manche ; sans administrateur, la partie se joue avec les réglages par défaut.
+   Le code n'est pas écrit en clair ici, mais ce n'est qu'un garde-fou entre collègues : la page étant publique, il ne protège pas d'un bricoleur. */
+const ADMIN_H='12b7b0fe0a392b44',DEF={opt:0,pd:30,hd:240,zone:0};
+const codeHash=s=>{let a=0x811c9dc5,b=0x01000193^0x9e3779b9;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,0x01000193);b=Math.imul(b^(c+i*131),0x85ebca6b);b^=b>>>13;}return(a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0');};
+const cleanSet=a=>Array.isArray(a)&&a.length===4&&a.every(Number.isFinite)?{opt:clamp(a[0]|0,0,2),pd:clamp(a[1]|0,5,120),hd:clamp(a[2]|0,30,900),zone:clamp(a[3]|0,0,3)}:null;
+const adminOf=A=>A.find(a=>a.ad&&!a.aw)||A.find(a=>a.ad)||null;                                   // le premier administrateur arrivé
+function roundSet(){const ad=adminOf(actives()),b=ad?(ad.peer===net.me?G.set:ad.set||DEF):DEF;return{opt:b.opt,pd:b.pd,hd:b.hd,zone:b.zone,solo:G.set.solo};}
 const D={ver:0,by:'',mask:W.doors.reduce((m,d,i)=>m|(d.isOpen?1<<i:0),0)};
 function applyDoors(mask){mask&=~lockMask();D.mask=mask;W.doors.forEach((d,i)=>{if(W.setDoor(i,!!(mask>>i&1)))W.sfx('door',d);});W.unstick(me.pos,myR(),me.y);}
 function setD(mask){D.ver++;D.by=net.me||'';applyDoors(mask);}
@@ -2074,7 +2090,7 @@ function newRemote(peer){return{peer,pres:null,at:0,fresh:true,name:'',j:0,st:0,
 const live=R=>R.st>0&&performance.now()-R.at<6000;
 function ingest(R,pr,t){R.at=performance.now();
   const name=String(pr.n||'Joueur').slice(0,14);if(name!==R.name){R.name=name;if(R.hav)R.hav.nt.set(name,'#ed1b54');if(R.pav)R.pav.nt.set(name,'#ffffff');}
-  R.st=pr.st|0;R.aw=pr.aw|0;R.rd=pr.rd|0;R.j=+pr.j||0;R.ro=pr.ro|0;R.al=pr.al|0;R.cr=pr.cr|0;R.hp=pr.hp|0;R.lv=pr.lv|0;R.er=pr.er|0;R.sc=pr.sc|0;R.rs=pr.rs|0;R.hc=pr.hc|0;R.fd=pr.fd|0;R.tk=Number.isFinite(pr.tk)?pr.tk|0:-1;
+  R.st=pr.st|0;R.aw=pr.aw|0;R.rd=pr.rd|0;R.j=+pr.j||0;R.ro=pr.ro|0;R.al=pr.al|0;R.cr=pr.cr|0;R.hp=pr.hp|0;R.lv=pr.lv|0;R.er=pr.er|0;R.sc=pr.sc|0;R.rs=pr.rs|0;R.hc=pr.hc|0;R.fd=pr.fd|0;R.set=cleanSet(pr.as);R.ad=R.set?1:0;R.fc=pr.fc|0;R.tk=Number.isFinite(pr.tk)?pr.tk|0:-1;
   const f=Number.isFinite(pr.f)&&items[pr.f|0]?pr.f|0:-1;if(f!==R.f){R.f=f;if(!R.fresh&&R.ro===1&&R.al)W.sfx('pop',R);}
   if(Array.isArray(pr.p)&&pr.p.length===3&&pr.p.every(Number.isFinite)){R.snaps.push({t,x:clamp(pr.p[0],-6,25),y:clamp(pr.p[1],0,2.6),z:clamp(pr.p[2],-11,11),yaw:+pr.y||0,pitch:clamp(+pr.t||0,-1.4,1.4),ry:+pr.ry||0});if(R.snaps.length>24)R.snaps.shift();}
   if(Array.isArray(pr.s)){let mx=R.shotSeq;for(const s of pr.s){if(!Array.isArray(s)||s.length<8||!s.slice(0,8).every(Number.isFinite))continue;const q=s[0]|0;if(q>mx)mx=q;if(!R.fresh&&q>R.shotSeq)remoteShot(R,s);}R.shotSeq=mx;}
@@ -2107,18 +2123,19 @@ function pub(){pubAt=performance.now();
   if(!G.joined){net.set({v:1,st:0,n:''});return;}
   const o={v:1,n:G.name,j:G.joinT,st:1,aw:G.away?1:0,rd:G.ready?G.g.k+1:0,hb:Math.floor(Date.now()/1000),ro:me.role,al:me.alive?1:0,p:[r2(me.pos.x+me.ox),r2(me.y),r2(me.pos.z+me.oz)],y:r3(me.yaw),t:r3(me.pitch),ry:r3(me.ry),cr:me.crouch?1:0,
     f:me.form,tk:me.took,hp:me.hp,lv:me.lives,er:me.errs,sc:me.score,rs:Math.round(me.rs),hc:me.hc,fd:me.found,s:me.shots,h:me.claims,dn:[me.deathSeq,me.killer],dc:me.decoys,tn:[me.tauntSeq,me.tauntKind],dr:[D.ver,D.mask],dw:[Dw.ver,Dw.mask]};
+  if(G.admin){o.as=[G.set.opt,G.set.pd,G.set.hd,G.set.zone];if(G.force)o.fc=G.g.k+1;}
   if(G.isHost){const g=G.g;o.g={n:g.n,k:g.k,ph:g.ph,e:Math.max(0,Math.round(G.phEnd-performance.now())),hu:g.hu,win:g.win,hd:g.hd,pd:g.pd,zn:g.zn,opt:g.opt,bn:g.bn,solo:g.solo,pl:g.pl};
     o.b=bots.map(b=>[b.id,b.form,r2(b.x),r2(b.y),r2(b.z),r3(b.ry),b.al]);o.bd=botDeaths;}
   net.set(o);}
 
 /* ---------- manches : la personne présente depuis le plus longtemps mène la partie ---------- */
-function actives(){const A=[];if(G.joined)A.push({peer:net.me,name:G.name,hc:me.hc,j:G.joinT,aw:G.away?1:0,rd:G.ready?G.g.k+1:0,sc:me.score});remotes.forEach(R=>{if(live(R)&&R.j>0)A.push({peer:R.peer,name:R.name,hc:R.hc,j:R.j,aw:R.aw,rd:R.rd,sc:R.sc,R});});
+function actives(){const A=[];if(G.joined)A.push({peer:net.me,name:G.name,hc:me.hc,j:G.joinT,aw:G.away?1:0,rd:G.ready?G.g.k+1:0,sc:me.score,ad:G.admin?1:0,fc:G.force?G.g.k+1:0,set:G.set});remotes.forEach(R=>{if(live(R)&&R.j>0)A.push({peer:R.peer,name:R.name,hc:R.hc,j:R.j,aw:R.aw,rd:R.rd,sc:R.sc,ad:R.ad,fc:R.fc,set:R.set,R});});
   return A.sort((a,b)=>a.j-b.j||(a.peer<b.peer?-1:1));}
 function hostOf(A){return A.find(a=>!a.aw)||A[0]||null;}
 const propsAlive=()=>{let n=me.role===1&&me.alive?1:0;remotes.forEach(R=>{if(live(R)&&R.ro===1&&R.al)n++;});botList().forEach(b=>{if(b[6])n++;});return n;};
 const huntersAlive=()=>{let n=me.role===2&&me.alive?1:0;remotes.forEach(R=>{if(live(R)&&R.ro===2&&R.al)n++;});if(hb.on&&hb.alive)n++;return n;};
 function setPhase(ph,ms,win){const g=G.g;g.ph=ph;g.k++;if(win!=null)g.win=win;G.phEnd=performance.now()+ms;enterPhase();pub();}
-function startRound(){const g=G.g,A=actives().filter(a=>g.pl.includes(a.peer)),n=g.n+1,s=G.set;let hu=[],bn=0,solo=0;
+function startRound(){const g=G.g,A=actives().filter(a=>g.pl.includes(a.peer)),n=g.n+1,s=roundSet();let hu=[],bn=0,solo=0;
   if(!A.length){setPhase('lobby',0);return;}
   if(A.length<=1){solo=1;const role=A[0].peer!==net.me?2:s.solo||(n%2?1:2);if(role===2){hu=[A[0].peer];bn=4;}else{hu=['bot'];bn=2;}}
   else{const nh=A.length<=3?1:A.length<=6?2:3;hu=A.slice().sort((a,b)=>a.hc-b.hc||Math.random()-.5).slice(0,nh).map(a=>a.peer);bn=Math.max(0,3-(A.length-nh));}
@@ -2132,7 +2149,7 @@ function roundTick(now){if(G.explore)return;if(!G.joined){const A=actives(),h=ho
   if(!G.isHost){if(h.R.g)follow(h.R);return;}
   const g=G.g;
   if(g.ph==='lobby'){const here=A.filter(a=>!a.aw),rdy=A.filter(a=>a.rd===g.k+1);   // salle d'attente : on part quand toutes les personnes présentes sont prêtes, ou quand celle qui mène lance sans attendre
-    if(rdy.length&&(G.force||(here.length&&here.every(a=>a.rd===g.k+1)))){G.force=false;g.pl=rdy.map(a=>a.peer);setPhase('count',3200);}return;}
+    if(rdy.length&&((G.force&&(G.admin||!adminOf(A)))||A.some(a=>a.ad&&a.fc===g.k+1)||(here.length&&here.every(a=>a.rd===g.k+1)))){G.force=false;g.pl=rdy.map(a=>a.peer);setPhase('count',3200);}return;}
   if(g.ph==='count'){if(now>=G.phEnd)startRound();return;}
   if(g.ph==='hunt'&&now-G.huntAt>2500){if(propsAlive()===0){setPhase('end',END,1);return;}if(huntersAlive()===0){setPhase('end',END,2);return;}}
   if(now>=G.phEnd){if(g.ph==='prep'){setD(D.mask|STAIR);setPhase('hunt',g.hd*1000);}else if(g.ph==='hunt')setPhase('end',END,2);else setPhase('lobby',0);}}
@@ -2375,12 +2392,15 @@ function drawLobby(){if(!G.joined||G.view!=='inter')return;const g=G.g,A=actives
   $('lobList').innerHTML=A.map(a=>{const st=lob?(a.rd===g.k+1?'prêt':a.aw?'absent':'pas encore prêt'):g.pl.includes(a.peer)?'en jeu':'attend la prochaine';
     return'<div class="row'+(a.peer===net.me?' me':'')+'"><i class="dot'+(lob&&a.rd===g.k+1?' on':'')+'"></i><span class="nm">'+esc(a.name||'Joueur')+'</span><small>'+st+'</small><b>'+(a.sc|0)+'</b></div>';}).join('');
   $('ready').hidden=!lob;$('ready').textContent=G.ready?'Prêt · annuler':'Je suis prêt';$('ready').classList.toggle('ghost',G.ready);
-  $('force').hidden=!(lob&&G.isHost&&A.length>1);$('lobSet').hidden=!(lob&&G.isHost);
-  $('lobNote').textContent=lob?(G.isHost?(A.length>1?'Vous menez la partie : vos réglages s\'appliquent.':''):'Les réglages sont ceux de la personne qui mène la partie.'):'';}
+  const ad=adminOf(A),s=roundSet(),zn=s.zone||(A.length<=2?1:A.length<=4?2:3);
+  $('force').hidden=!(lob&&A.length>1&&(G.admin||(!ad&&G.isHost)));$('lobSet').hidden=!(lob&&G.admin);$('lobAdmin').hidden=!(lob&&!G.admin);
+  $('lobNote').textContent=lob?(ad?(ad.peer===net.me?'Vous êtes l\'administrateur : vos réglages s\'appliquent.':(ad.name||'Un joueur')+' est l\'administrateur : ses réglages s\'appliquent.'):'Pas d\'administrateur dans la salle : réglages par défaut.')
+    +' Prochaine manche : '+ZNAME[zn].toLowerCase()+', '+s.pd+' s pour se cacher, '+s.hd/60+' min de chasse.':'';}
 function drawMenu(){const A=actives(),n=activeRemotes(),full=n>=MAXP,h=hostOf(A),on=online();
   $('online').textContent=full?'Complet : 10 joueurs sont déjà en jeu.':netLine(n);$('net').classList.toggle('on',on);$('play').disabled=full||!G.netReady||(net.kind==='room'&&!net.me&&performance.now()-G.netAt<5000);
   const who=[];remotes.forEach(R=>{if(live(R))who.push('<li><b>'+esc(R.name)+'</b><span>'+(R.ro===2?'chasse':R.ro===1?(R.al?'se cache':'trouvé'):'en salle d\'attente')+'</span></li>');});$('who').hidden=!who.length;$('who').innerHTML=who.join('');
-  $('hostNote').textContent=h&&h.R?h.R.name+' mène la partie en cours : ce sont ses réglages qui s\'appliquent. Les vôtres serviront si vous prenez le relais.':'Vous mènerez la partie : ces réglages s\'appliqueront dès la première manche.';}
+  const ad=adminOf(A);$('hostNote').textContent=G.admin?(ad&&ad.R?ad.R.name+' est déjà administrateur de la partie en cours : ses réglages restent prioritaires tant qu\'il est là.':'Vous êtes administrateur : vos réglages s\'appliqueront dès que vous serez dans la salle d\'attente.')
+    :ad&&ad.R?ad.R.name+' est l\'administrateur de la partie en cours.':'Sans administrateur, la partie se joue avec les réglages par défaut.';}
 const mini=$('mini').querySelector('canvas'),mg=mini.getContext('2d');
 function drawMini(){mg.clearRect(0,0,W.MW,W.MH);mg.drawImage(W.miniBg(),0,0);
   if(G.g.zn<3){mg.fillStyle='rgba(38,38,38,.62)';const F=(a,b,c,d)=>mg.fillRect(W.mx(X(a)),W.mz(Z(b)),(X(c)-X(a))*W.MS,(Z(d)-Z(b))*W.MS);F(176,-450,388,271);F(388,-450,1250,290);F(-181,-159,68,242);if(G.g.zn===1)F(-181,249,73,775);}   // parties fermées de l'étage
@@ -2394,7 +2414,11 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{$('keysM').hi
 /* ---------- réglages ---------- */
 {let s={};try{s=JSON.parse(store.get('ph-set')||'{}')||{};}catch(e){}['opt','pd','hd','zone','solo'].forEach(k=>{if(Number.isFinite(s[k]))G.set[k]=s[k];});}
 const SHOW={pd:v=>v+' s',hd:v=>v/60+' min'};
-function drawSet(){document.querySelectorAll('[data-show]').forEach(e=>{e.textContent=SHOW[e.dataset.show](G.set[e.dataset.show]);});document.querySelectorAll('[data-set]').forEach(row=>{const k=row.dataset.set;row.querySelectorAll('button').forEach(b=>{const on=+b.dataset.v===G.set[k];b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{G.set[k]=+b.dataset.v;store.set('ph-set',JSON.stringify(G.set));drawSet();};});});}
+function drawSet(){document.querySelectorAll('[data-show]').forEach(e=>{e.textContent=SHOW[e.dataset.show]((G.admin?G.set:DEF)[e.dataset.show]);});$('adminZone').hidden=!G.admin;document.querySelectorAll('[data-panel="game"] .adminLock').forEach(e=>{e.hidden=!!G.admin;});document.querySelectorAll('[data-set]').forEach(row=>{const k=row.dataset.set;row.querySelectorAll('button').forEach(b=>{const on=+b.dataset.v===G.set[k];b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{if(k!=='solo'&&!G.admin)return;G.set[k]=+b.dataset.v;store.set('ph-set',JSON.stringify(G.set));drawSet();if(G.joined){drawLobby();pub();}};});});}
+function setAdmin(on){G.admin=!!on;store.set('ph-admin',on?ADMIN_H:'');document.querySelectorAll('.adminCode').forEach(i=>{i.value='';});document.querySelectorAll('.adminMsg').forEach(m=>{m.textContent='Les réglages de la partie sont réservés à l\'administrateur.';m.classList.remove('err');});drawSet();if(G.joined){drawLobby();pub();}}
+function tryAdmin(input){const ok=codeHash(input.value.trim().toUpperCase())===ADMIN_H;if(ok){setAdmin(true);note('Mode administrateur activé.');}else{const m=input.closest('.adminLock').querySelector('.adminMsg');m.textContent='Code incorrect.';m.classList.add('err');input.select();}}
+document.querySelectorAll('.adminGo').forEach(b=>{b.onclick=()=>tryAdmin($(b.dataset.for));});document.querySelectorAll('.adminCode').forEach(i=>{i.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')tryAdmin(i);});});
+$('adminOff').onclick=()=>setAdmin(false);G.admin=store.get('ph-admin')===ADMIN_H;
 function setSens(v){G.sens=clamp(+v||1,.2,3);store.set('ph-sens',String(G.sens));['sens','sens2'].forEach(id=>{$(id).value=G.sens;});['sensV','sensV2'].forEach(id=>{$(id).textContent='× '+G.sens.toFixed(1).replace('.',',');});}
 function setVol(v){G.vol=clamp(Number.isFinite(+v)?+v:.5,0,1);store.set('ph-vol',String(G.vol));W.volume(G.vol);['vol','vol2'].forEach(id=>{$(id).value=G.vol;});['volV','volV2'].forEach(id=>{$(id).textContent=Math.round(G.vol*100)+' %';});}
 /* qualité graphique : Haute ou Standard ; le jeu repasse seul en Standard si les images par seconde chutent */
