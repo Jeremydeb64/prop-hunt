@@ -52,6 +52,7 @@ body.free #c{cursor:crosshair}
 #nomouse{display:none;padding:10px 12px;border-radius:var(--r-row);background:var(--carbon-2);font-size:13px}
 #joinbox{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--r-row);background:var(--carbon-2)}
 #joinrow{display:flex;gap:10px;align-items:flex-end}
+#explorerow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}#explorerow span{font-size:13px;color:var(--on-carbon-2)}
 #joinrow .field{flex:1;min-width:0}
 .field{display:flex;flex-direction:column;gap:6px}
 .field>label,.field>span{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:500;color:var(--on-carbon-2)}
@@ -214,7 +215,7 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
 
 <div id="end" class="modal" hidden><div class="pane"><h2 id="endTitle">Manche terminée.</h2><p id="endSub"></p><div class="list" id="endList"></div><p>Retour à la salle d'attente dans <b id="endIn">12</b> s.</p></div></div>
 
-<div id="pause" class="modal" hidden><div class="pane"><h2>Pause.</h2><p>La partie continue sans vous attendre.</p>
+<div id="pause" class="modal" hidden><div class="pane"><h2>Pause.</h2><p id="pauseTxt">La partie continue sans vous attendre.</p>
   <div class="field"><label for="sens2">Sensibilité de la souris <b id="sensV2"></b></label><input id="sens2" type="range" min="0.2" max="3" step="0.1" value="1"></div>
   <div class="field"><label for="vol2">Volume <b id="volV2"></b></label><input id="vol2" type="range" min="0" max="1" step="0.05" value="0.5"></div>
   <div class="field"><span>Qualité graphique</span><div class="vrow" data-gfx><button class="vbtn" data-v="haute">Haute</button><button class="vbtn" data-v="standard">Standard</button></div></div>
@@ -246,6 +247,7 @@ kbd{display:inline-block;min-width:26px;padding:1px 7px;border:1px solid var(--f
   <p id="nomouse">Le jeu se joue au clavier et à la souris, sur un ordinateur.</p>
   <div id="joinbox">
     <div id="joinrow"><div class="field"><label for="name">Votre prénom</label><input id="name" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Prénom"></div><button class="cta" id="play">Rejoindre</button></div>
+    <div id="explorerow"><button class="cta ghost" id="explore">J'explore l'étage</button><span>Une promenade seul, hors partie, pour repérer les lieux.</span></div>
     <div id="net"><i></i><span id="online">Connexion…</span></div>
     <ul id="who" hidden></ul>
   </div>
@@ -2051,13 +2053,13 @@ async function initNet(){const local=/^(localhost|127\.0\.0\.1)$/.test(location.
 const D={ver:0,by:'',mask:W.doors.reduce((m,d,i)=>m|(d.isOpen?1<<i:0),0)};
 function applyDoors(mask){mask&=~lockMask();D.mask=mask;W.doors.forEach((d,i)=>{if(W.setDoor(i,!!(mask>>i&1)))W.sfx('door',d);});W.unstick(me.pos,myR(),me.y);}
 function setD(mask){D.ver++;D.by=net.me||'';applyDoors(mask);}
-function adoptD(a,peer){if(!Array.isArray(a)||!Number.isFinite(a[0])||!Number.isFinite(a[1]))return;const ver=a[0]|0;if(ver>D.ver||(ver===D.ver&&peer>D.by)){D.ver=ver;D.by=peer;applyDoors(a[1]&DOORALL);}}
+function adoptD(a,peer){if(G.explore)return;if(!Array.isArray(a)||!Number.isFinite(a[0])||!Number.isFinite(a[1]))return;const ver=a[0]|0;if(ver>D.ver||(ver===D.ver&&peer>D.by)){D.ver=ver;D.by=peer;applyDoors(a[1]&DOORALL);}}
 function nearDoor(p,r){let best=-1,bd=r;W.doors.forEach((d,i)=>{const q=Math.hypot(d.x-p.x,d.z-p.z);if(q<bd){bd=q;best=i;}});return best;}
 /* tiroirs des caissons : même principe que les portes, un état commun */
 const Dw={ver:0,by:'',mask:0};
 function applyDrawers(mask){Dw.mask=mask;W.drawers.forEach((d,i)=>{if(W.setDrawer(i,!!(mask>>i&1)))W.sfx('drawer',d);});}
 function setDw(mask){Dw.ver++;Dw.by=net.me||'';applyDrawers(mask);}
-function adoptDw(a,peer){if(!Array.isArray(a)||!Number.isFinite(a[0])||!Number.isFinite(a[1]))return;const ver=a[0]|0;if(ver>Dw.ver||(ver===Dw.ver&&peer>Dw.by)){Dw.ver=ver;Dw.by=peer;applyDrawers(a[1]|0);}}
+function adoptDw(a,peer){if(G.explore)return;if(!Array.isArray(a)||!Number.isFinite(a[0])||!Number.isFinite(a[1]))return;const ver=a[0]|0;if(ver>Dw.ver||(ver===Dw.ver&&peer>Dw.by)){Dw.ver=ver;Dw.by=peer;applyDrawers(a[1]|0);}}
 /* Terrain de jeu : selon le nombre de joueurs, une partie de l'étage reste fermée à clé pendant toute la manche (1 : bureaux Boomerang ; 2 : avec vestiaires et dépôt ; 3 : tout l'étage). */
 const DOORALL=Math.pow(2,W.doors.length)-1,DOOR0=D.mask,STAIR=1<<P.STAIR,ZLOCK=[0,[5,10,11,15,16],[10,11,15,16],[]].map(a=>a?a.reduce((m,i)=>m|1<<i,0):0),ZNAME=['','Bureaux Boomerang','Bureaux, vestiaires et dépôt','Tout l\'étage'];
 const inGame=()=>/^(prep|hunt|end)$/.test(G.g.ph),lockMask=()=>!inGame()?0:ZLOCK[G.g.zn]||0,zoneDoor=i=>!!(lockMask()>>i&1),doorLocked=i=>zoneDoor(i)||(G.g.ph==='prep'&&i===P.STAIR);   // pendant que les objets se cachent, les chasseurs restent sur le palier de l'escalier
@@ -2123,7 +2125,7 @@ function startRound(){const g=G.g,A=actives().filter(a=>g.pl.includes(a.peer)),n
   if(P.opt()!==G.g.opt)W.setOpt(G.g.opt);
   W.setLocks(lockMask());setD(DOOR0&~STAIR);setDw(0);placeBots(bn);botDeaths=[];hb.on=false;if(hu[0]==='bot')hbStart();
   setPhase('prep',G.g.pd*1000,0);}
-function roundTick(now){if(!G.joined){const A=actives(),h=hostOf(A);G.isHost=false;if(h&&h.R&&h.R.g)follow(h.R);return;}
+function roundTick(now){if(G.explore)return;if(!G.joined){const A=actives(),h=hostOf(A);G.isHost=false;if(h&&h.R&&h.R.g)follow(h.R);return;}
   if(net.kind==='room'&&!net.me)return;
   const A=actives(),h=hostOf(A);G.isHost=!h||h.peer===net.me;
   if(!G.isHost){if(h.R.g)follow(h.R);return;}
@@ -2158,7 +2160,14 @@ function showEnd(){const g=G.g;$('endTitle').textContent=g.win===1?'Les chasseur
 function join(){if(!net.me)net.me='moi';G.name=($('name').value.trim()||'Joueur').slice(0,14);store.set('ph-name',G.name);me.av.nt.set(G.name,'#ffffff');
   G.joined=true;G.away=false;G.joinT=Date.now();me.round=-1;me.role=0;me.alive=false;me.score=0;me.hc=0;G.ready=false;G.force=false;$('menu').hidden=true;
   if(activeRemotes()===0){G.g.ph='lobby';G.g.pl=[];}enterPhase();pub();}
-function leave(){G.joined=false;me.role=0;me.alive=false;hb.on=false;bots.length=0;G.g.ph='lobby';G.g.pl=[];G.g.solo=0;G.ready=false;$('click').hidden=true;setPaused(false);if(document.pointerLockElement)document.exitPointerLock();document.body.classList.remove('free');G.free=false;
+/* « J'explore l'étage » : une promenade libre pour repérer les lieux. Hors partie : personne ne vous voit, et vous ne voyez ni joueurs, ni leurres, ni robots.
+   Toutes les portes sont ouvertes, tout l'étage est accessible ; les portes et les tiroirs que l'on manipule ne changent que chez soi. */
+function explore(){if(G.joined)return;G.explore=true;G.g={n:0,k:0,ph:'lobby',pl:[],hu:[],win:0,hd:240,pd:30,zn:3,opt:P.opt(),bn:0,solo:0};hb.on=false;bots.length=0;
+  me.role=2;me.alive=true;me.round=-2;me.form=-1;me.took=-1;me.y=0;me.vy=0;me.vx=me.vz=0;me.onG=true;me.ox=me.oz=0;me.crouch=false;me.decoys=[];
+  const s=W.spawnAt(W.HUNT_SPAWNS,0);me.pos.set(s.x,0,s.z);me.yaw=-PI/2;me.pitch=0;
+  W.setLocks(0);W.doors.forEach((d,i)=>W.setDoor(i,true));D.mask=W.doors.reduce((m,d,i)=>m|1<<i,0);applyDrawers(0);
+  $('menu').hidden=true;$('end').hidden=true;$('feed').innerHTML='';setView('play');cardKey='';hudKey='';lastTimer='';$('timer').textContent='';if(!G.locked&&!G.free)$('click').hidden=false;}
+function leave(){if(G.explore){G.explore=false;D.ver=0;Dw.ver=0;}G.joined=false;me.role=0;me.alive=false;hb.on=false;bots.length=0;G.g.ph='lobby';G.g.pl=[];G.g.solo=0;G.ready=false;$('click').hidden=true;setPaused(false);if(document.pointerLockElement)document.exitPointerLock();document.body.classList.remove('free');G.free=false;
   syncDecoys(net.me,[],false);$('menu').hidden=false;$('end').hidden=true;setView('menu');pub();}
 
 /* ---------- robots : des objets cachés quand on manque de joueurs, et un chasseur quand on joue seul ---------- */
@@ -2212,7 +2221,7 @@ function hbUpdate(dt,t){if(!hb.on||!hb.alive||!G.isHost){if(hb.av)W.poseHunter(h
 function syncDecoys(peer,list,fx){const keep=new Set();list.forEach(d=>{const key=peer+':'+d[0];keep.add(key);if(decoyObjs.has(key))return;const o=P.cloneItem(d[1]|0);o.position.set(d[2],d[3],d[4]);o.rotation.y=d[5];o.userData.hit={k:'d',peer,id:d[0],form:d[1]|0};decoyG.add(o);decoyObjs.set(key,o);G.shDirty=true;});
   decoyObjs.forEach((o,key)=>{if(key.startsWith(peer+':')&&!keep.has(key)){if(fx){tmpV.copy(o.position);tmpV.y+=.3;W.burst(tmpV,W.DUST,22,null,.8);W.sfx('poof',o.position);}decoyG.remove(o);decoyObjs.delete(key);G.shDirty=true;}});}
 let takenKey='';
-function updateTaken(){const T=new Map();if(me.took>=0&&me.alive)T.set(me.took,net.me);remotes.forEach(R=>{if(live(R)&&R.ro===1&&R.al&&R.tk>=0&&items[R.tk]&&!T.has(R.tk))T.set(R.tk,R.peer);});
+function updateTaken(){const T=new Map();if(me.took>=0&&me.alive)T.set(me.took,net.me);if(!G.explore)remotes.forEach(R=>{if(live(R)&&R.ro===1&&R.al&&R.tk>=0&&items[R.tk]&&!T.has(R.tk))T.set(R.tk,R.peer);});
   const key=[...T.keys()].sort().join(',');if(key===takenKey)return;takenKey=key;items.forEach(it=>{const by=T.get(it.i)||null;if(it.taken!==by){it.taken=by;it.obj.visible=!by;}});W.refresh();G.shDirty=true;}
 
 /* ---------- le joueur ---------- */
@@ -2327,21 +2336,25 @@ function rows(){const A=[],g=G.g,st=(ro,al,f,fd,lv,rd)=>!rd?'attend la prochaine
 function drawBoard(end){const A=rows(),h=A.map((r,i)=>'<div class="row'+(r.me?' me':'')+(end&&i===0&&r.sc>0?' win':'')+'"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(r.name)+'</span><small>'+esc((ROLE[r.ro]||'')+(r.txt?' · '+r.txt:''))+'</small><b>'+r.sc+'</b></div>').join('');
   $(end?'endList':'tabList').innerHTML=h;if(!end)$('tabTitle').textContent='Manche '+G.g.n+' · classement';}
 let cardKey='',hudKey='',hudAt=0,lastTimer='';
-function drawCard(){const key=me.role+':'+(me.alive?1:0);if(key===cardKey)return;cardKey=key;const c=$('card');
+function drawCard(){const key=me.role+':'+(me.alive?1:0)+(G.explore?'x':'');if(key===cardKey)return;cardKey=key;const c=$('card');
+  if(G.explore){c.innerHTML='<div id="formName">Exploration</div><small id="hint"></small>';return;}
   if(me.role===2&&me.alive)c.innerHTML='<div class="big" id="ammoBig"><b id="ammoN"></b><span>/ '+MAG+' · réserve <b id="resN"></b></span></div><div class="bar"><i id="ammoBar"></i></div><div class="line"><span>Vies</span><div class="pips" id="lives"></div></div><div class="line"><span>Erreurs</span><div class="pips err" id="errs"></div></div><small id="hint"></small>';
   else if(me.role===1&&me.alive)c.innerHTML='<div id="formName"></div><div class="line"><span>Résistance</span><div class="pips" id="hpP"></div></div><div class="line"><span>Déguisements</span><div class="pips" id="xfP"></div></div><div class="line"><span>Leurres</span><div class="pips" id="decP"></div></div><div class="line"><span>Accélération</span><span id="lockT"></span></div><div class="bar"><i id="boostBar"></i></div><small id="hint"></small>';
   else c.innerHTML='<div id="formName">Spectateur</div><small>Vous regardez la fin de la manche. Déplacez-vous librement : les murs ne vous arrêtent plus.</small>';}
-function drawHud(t,now){const g=G.g,tm=mmss(G.phEnd-now);if(tm!==lastTimer){lastTimer=tm;$('timer').textContent=tm;if(g.ph==='prep'){$('waitN').textContent=Math.max(0,Math.ceil((G.phEnd-now)/1000));if(G.phEnd-now<5200&&G.phEnd-now>0)W.sfx('tick');}}
+function drawHud(t,now){const g=G.g,tm=G.explore?'':mmss(G.phEnd-now);if(tm!==lastTimer){lastTimer=tm;$('timer').textContent=tm;if(g.ph==='prep'){$('waitN').textContent=Math.max(0,Math.ceil((G.phEnd-now)/1000));if(G.phEnd-now<5200&&G.phEnd-now>0)W.sfx('tick');}}
   const c=$('cross');c.style.left=(G.free?G.cur.x*100:50)+'%';c.style.top=(G.free?G.cur.y*100:50)+'%';
   if(me.role===2&&me.alive){const rel=me.reloadEnd?1-clamp((me.reloadEnd-t)/RELOAD,0,1):me.ammo/MAG,b=$('ammoBar');if(b)b.style.transform='scaleX('+rel.toFixed(3)+')';}
   if(me.role===1&&me.alive){const b=$('boostBar');if(b)b.style.transform='scaleX('+(t<me.boostEnd?(me.boostEnd-t)/BOOST:clamp(1-(me.boostAt-t)/BOOST_CD,0,1)).toFixed(3)+')';}
   if(t<hudAt)return;hudAt=t+.15;drawCard();
-  const key=g.ph+me.role+(me.alive?1:0);if(key!==hudKey){hudKey=key;$('phase').textContent=g.ph==='prep'?'Les objets se cachent':'Chasse en cours';
+  const key=g.ph+me.role+(me.alive?1:0)+(G.explore?'x':'');if(key!==hudKey){hudKey=key;$('phase').textContent=g.ph==='prep'?'Les objets se cachent':'Chasse en cours';
     $('role').textContent=me.alive?ROLE[me.role]+'.':'Spectateur.';$('goal').textContent=!me.alive?'Vous suivez la fin de la manche.':me.role===2?(g.ph==='prep'?'Patientez sur le palier de l\'escalier.':'Trouvez les joueurs déguisés. Chaque tir sur un vrai objet compte comme une erreur.'):g.ph==='prep'?'Choisissez un objet et une bonne cachette.':'Restez caché jusqu\'à la fin du temps.';
-    $('wait').hidden=!(g.ph==='prep'&&me.role===2);c.classList.toggle('dot',me.role!==2||!me.alive);}
-  $('counts').innerHTML='<div><span>Objets encore cachés</span><b>'+propsAlive()+'</b></div><div><span>Chasseurs en jeu</span><b>'+huntersAlive()+'</b></div><div><span>Manche</span><b>'+g.n+'</b></div><div><span>Terrain</span><b>'+['','Bureaux','Bureaux et dépôt','Tout l\'étage'][g.zn]+'</b></div>';
+    $('wait').hidden=!(g.ph==='prep'&&me.role===2);c.classList.toggle('dot',me.role!==2||!me.alive||!!G.explore);
+    if(G.explore){$('phase').textContent='Repérage';$('role').textContent='Exploration.';$('goal').textContent='Promenez-vous pour repérer l\'étage. Vous êtes hors partie : personne ne vous voit, et vous ne voyez personne.';}}
+  if(G.explore)$('counts').innerHTML='<div><span>Terrain</span><b>Tout l\'étage</b></div><div><span>Portes</span><b>Toutes ouvertes</b></div>';
+  else $('counts').innerHTML='<div><span>Objets encore cachés</span><b>'+propsAlive()+'</b></div><div><span>Chasseurs en jeu</span><b>'+huntersAlive()+'</b></div><div><span>Manche</span><b>'+g.n+'</b></div><div><span>Terrain</span><b>'+['','Bureaux','Bureaux et dépôt','Tout l\'étage'][g.zn]+'</b></div>';
   const use=[];
-  if(me.role===2&&me.alive){$('ammoN').textContent=me.ammo;$('resN').textContent=me.reserve;$('ammoBig').classList.toggle('low',me.ammo<=1);pips('lives',me.lives,LIVES);pips('errs',me.errs,ERRS);
+  if(G.explore)$('hint').textContent=keyLabel(bind.use)+' ouvrir portes et tiroirs · '+keyLabel(bind.jump)+' sauter · '+keyLabel(bind.run)+' courir · Échap pour revenir à l\'accueil';
+  else if(me.role===2&&me.alive){$('ammoN').textContent=me.ammo;$('resN').textContent=me.reserve;$('ammoBig').classList.toggle('low',me.ammo<=1);pips('lives',me.lives,LIVES);pips('errs',me.errs,ERRS);
     $('hint').textContent=g.ph==='prep'?'Le pistolet se débloque à l\'ouverture de la chasse.':me.reloadEnd?'Rechargement…':me.ammo===0?(me.reserve?keyLabel(bind.reload)+' pour recharger':'Plus de munitions : trouvez un objet pour en regagner'):'Clic droit pour viser';}
   if(me.role===1&&me.alive){$('formName').textContent=me.form>=0?items[me.form].name:'Petit bonhomme';pips('hpP',me.hp,me.hpMax);pips('decP',me.decoyLeft,DECOYS);pips('xfP',me.xfLeft,XFORMS);$('lockT').textContent=me.took>=0?'À la place de l\'objet':me.lock?'Rotation bloquée':'';
     $('hint').textContent=me.form<0?'Visez un objet, puis '+keyLabel(bind.use)+' pour vous déguiser.':keyLabel(bind.jump)+' sauter sur les meubles · '+keyLabel(bind.special)+' leurre · '+keyLabel(bind.rotate)+' pivoter · clic droit bloquer · '+keyLabel(bind.whistle)+' narguer';
@@ -2351,7 +2364,7 @@ function drawHud(t,now){const g=G.g,tm=mmss(G.phEnd-now);if(tm!==lastTimer){last
     if(di>=0)use.push('<span'+(doorLocked(di)?' class="alt"':'')+'>'+(zoneDoor(di)?'Zone fermée pour cette manche':doorLocked(di)?'Porte verrouillée pendant le compte à rebours':esc(keyLabel(bind.use))+' : '+(W.doors[di].isOpen?'fermer ':'ouvrir ')+esc(W.doors[di].name))+'</span>');}
   $('use').hidden=!use.length;if(use.length)$('use').innerHTML=use.join('');
   const n=activeRemotes(),on=online();
-  $('status').textContent=(n?(n+1)+' joueurs':on?'En ligne, seul : des robots tiennent les autres rôles':'Hors ligne : des robots tiennent les autres rôles')+(G.isHost&&n?' · vous menez la partie':'')+' · '+ZNAME[g.zn].toLowerCase();
+  $('status').textContent=G.explore?'Exploration libre, hors partie':(n?(n+1)+' joueurs':on?'En ligne, seul : des robots tiennent les autres rôles':'Hors ligne : des robots tiennent les autres rôles')+(G.isHost&&n?' · vous menez la partie':'')+' · '+ZNAME[g.zn].toLowerCase();
   if(!$('tab').hidden)drawBoard(false);}
 function drawLobby(){if(!G.joined||G.view!=='inter')return;const g=G.g,A=actives(),now=performance.now(),lob=g.ph==='lobby',left=Math.max(1,Math.ceil((G.phEnd-now)/1000)),mine=g.pl.includes(net.me);
   $('lobTitle').textContent=lob?'Salle d\'attente.':g.ph==='count'?'C\'est parti.':g.ph==='end'?'Manche terminée.':'Partie en cours.';
@@ -2371,7 +2384,7 @@ const mini=$('mini').querySelector('canvas'),mg=mini.getContext('2d');
 function drawMini(){mg.clearRect(0,0,W.MW,W.MH);mg.drawImage(W.miniBg(),0,0);
   if(G.g.zn<3){mg.fillStyle='rgba(38,38,38,.62)';const F=(a,b,c,d)=>mg.fillRect(W.mx(X(a)),W.mz(Z(b)),(X(c)-X(a))*W.MS,(Z(d)-Z(b))*W.MS);F(176,-450,388,271);F(388,-450,1250,290);F(-181,-159,68,242);if(G.g.zn===1)F(-181,249,73,775);}   // parties fermées de l'étage
   mg.fillStyle='#262626';W.doors.forEach(d=>{if(!d.isOpen)mg.fillRect(W.mx(d.rect.x0),W.mz(d.rect.z0),Math.max(1.5,(d.rect.x1-d.rect.x0)*W.MS),Math.max(1.5,(d.rect.z1-d.rect.z0)*W.MS));});
-  mg.fillStyle='#ed1b54';remotes.forEach(R=>{if(live(R)&&R.al&&R.ro===me.role&&me.role>0&&me.role<3){mg.beginPath();mg.arc(W.mx(R.x),W.mz(R.z),3,0,2*PI);mg.fill();}});   // on ne voit que ses coéquipiers
+  mg.fillStyle='#ed1b54';remotes.forEach(R=>{if(!G.explore&&live(R)&&R.al&&R.ro===me.role&&me.role>0&&me.role<3){mg.beginPath();mg.arc(W.mx(R.x),W.mz(R.z),3,0,2*PI);mg.fill();}});   // on ne voit que ses coéquipiers
   const x=W.mx(me.pos.x),z=W.mz(me.pos.z);mg.save();mg.translate(x,z);mg.rotate(-me.yaw);mg.fillStyle='rgba(38,38,38,.25)';mg.beginPath();mg.moveTo(0,0);mg.lineTo(-13,-24);mg.lineTo(13,-24);mg.fill();
   mg.fillStyle='#ed1b54';mg.beginPath();mg.arc(0,0,4.4,0,2*PI);mg.fill();mg.strokeStyle='#fff';mg.lineWidth=1.5;mg.stroke();mg.restore();}
 
@@ -2400,14 +2413,14 @@ function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);c
 addEventListener('resize',resize);
 
 /* ---------- commandes ---------- */
-function setPaused(v){G.paused=v;$('pause').hidden=!v;if(v){G.fire=false;G.ads=false;G.keys={};}else{$('keysM').hidden=true;}}
+function setPaused(v){G.paused=v;$('pause').hidden=!v;if(v){G.fire=false;G.ads=false;G.keys={};$('pauseTxt').textContent=G.explore?'Vous explorez l\'étage, hors partie.':'La partie continue sans vous attendre.';$('quit').textContent=G.explore?'Revenir à l\'accueil':'Quitter la partie';}else{$('keysM').hidden=true;}}
 function setFree(){if(G.locked||G.everLocked)return;G.free=true;document.body.classList.add('free');$('click').hidden=true;setPaused(false);}   // souris non capturée : on vise avec le curseur, la vue tourne quand il approche des bords
 function lock(){if(G.free)return;let p;try{p=canvas.requestPointerLock();}catch(e){setFree();return;}if(p&&p.catch)p.catch(()=>{if(!G.everLocked)setFree();});
-  setTimeout(()=>{if(!G.locked&&!G.everLocked&&G.joined)setFree();},1200);}
-document.addEventListener('pointerlockchange',()=>{G.locked=document.pointerLockElement===canvas;if(G.locked){G.everLocked=true;G.free=false;document.body.classList.remove('free');$('click').hidden=true;setPaused(false);}else if(G.joined&&!G.free&&G.view==='play')setPaused(true);});
+  setTimeout(()=>{if(!G.locked&&!G.everLocked&&(G.joined||G.explore))setFree();},1200);}
+document.addEventListener('pointerlockchange',()=>{G.locked=document.pointerLockElement===canvas;if(G.locked){G.everLocked=true;G.free=false;document.body.classList.remove('free');$('click').hidden=true;setPaused(false);}else if((G.joined||G.explore)&&!G.free&&G.view==='play')setPaused(true);});
 document.addEventListener('pointerlockerror',()=>{if(!G.everLocked)setFree();});
 document.addEventListener('mousemove',e=>{if(G.locked){if(G.view==='play'){const k=SENS*G.sens*(1-.45*G.adsK);me.yaw-=e.movementX*k;me.pitch=clamp(me.pitch-e.movementY*k,-1.4,1.4);if(me.role===2)W.vm.sway(e.movementX,e.movementY);}}else{G.cur.x=e.clientX/innerWidth;G.cur.y=e.clientY/innerHeight;}});
-canvas.addEventListener('mousedown',e=>{if(!G.joined||G.paused)return;W.audio();if(!G.locked&&!G.free){lock();return;}
+canvas.addEventListener('mousedown',e=>{if(!(G.joined||G.explore)||G.paused)return;W.audio();if(!G.locked&&!G.free){lock();return;}
   if(e.button===2){if(me.role===2)G.ads=true;else if(me.role===1&&me.alive){me.lock=!me.lock;W.sfx('lock');note(me.lock?'Rotation bloquée.':'Rotation libre.');}return;}
   if(e.button===0&&me.role===2&&me.alive)G.fire=true;});
 addEventListener('mouseup',e=>{if(e.button===2)G.ads=false;else G.fire=false;});
@@ -2415,7 +2428,7 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('beforeunload',e=>{if(G.joined&&performance.now()-(G.ctrlAt||-1e9)<1500){e.preventDefault();e.returnValue='';}});   // filet de sécurité : si la page hôte l'autorise, le navigateur demande confirmation au lieu de fermer sur Ctrl + W
 addEventListener('keydown',e=>{if(e.ctrlKey)G.ctrlAt=performance.now();
   if(waitBind){e.preventDefault();if(e.code==='Escape'){waitBind=null;drawBinds();}else if(/^(Control|Meta|OS)/.test(e.code))note('Ctrl ne peut pas servir : avec W, il fermerait la fenêtre.');else setBind(waitBind,e.code);return;}
-  if(e.target&&e.target.tagName==='INPUT'&&e.target.type==='text'){if(e.key==='Enter'&&e.target.id==='name')$('play').click();return;}if(!G.joined)return;
+  if(e.target&&e.target.tagName==='INPUT'&&e.target.type==='text'){if(e.key==='Enter'&&e.target.id==='name')$('play').click();return;}if(!(G.joined||G.explore))return;
   if(e.code==='Escape'&&G.free){setPaused(!G.paused);return;}if(G.paused)return;
   if(e.code==='ControlLeft'||e.code==='ControlRight'){if(!e.repeat)note('Ctrl ne sert pas ici : avec W, il fermerait la fenêtre. '+keyLabel(bind.crouch)+' pour s\'accroupir.');return;}
   let used=false;const t=performance.now()/1000;
@@ -2434,6 +2447,7 @@ addEventListener('blur',()=>{G.keys={};G.fire=false;G.ads=false;$('tab').hidden=
 document.addEventListener('visibilitychange',()=>{if(!G.joined)return;G.away=document.hidden;pub();});
 setInterval(()=>{if(document.hidden&&G.joined){const now=performance.now();poll(now/1000);roundTick(now);pub();}},1000);   // onglet masqué : on reste dans la partie, et on continue de la mener s'il le faut
 $('play').onclick=()=>{if($('play').disabled)return;W.audio();join();};
+$('explore').onclick=()=>{W.audio();explore();};
 $('ready').onclick=()=>{W.audio();G.ready=!G.ready;drawLobby();pub();};
 $('force').onclick=()=>{W.audio();G.ready=true;G.force=true;drawLobby();pub();};
 $('lobQuit').onclick=leave;
@@ -2473,7 +2487,7 @@ function frame(now){requestAnimationFrame(frame);tick(Math.min(.05,(now-last)/10
 function tick(dt){const now=performance.now(),t=now/1000;
   poll(t);roundTick(now);
   remotes.forEach(R=>interp(R,t));updateTaken();
-  if(G.joined&&G.view==='play'){
+  if((G.joined||G.explore)&&G.view==='play'){
     if(!G.paused){if(!me.alive||me.role===3)controlSpec(dt);else if(me.role===2)controlHunter(dt,t);else if(me.role===1)controlProp(dt,t);}else{me.vx=me.vz=0;me.speed=0;}
     if(me.alive&&me.role!==3&&me.took<0&&!wallForm()){const gr=Math.max(0,W.groundAt(me.pos.x,me.pos.z,myR(),me.y,me.onG?.3:.02,me.vy>0));   // le sol, ou le dessus du meuble sur lequel on se trouve
       if(me.y<gr){me.y=gr;me.vy=0;me.onG=true;}else if(me.y>gr+.001||me.vy>0){me.vy-=16*dt;me.y=Math.min(2.3,me.y+me.vy*dt);me.onG=false;if(me.y<=gr&&me.vy<=0){me.y=gr;me.vy=0;me.onG=true;W.sfx('land');}}else me.onG=true;}
@@ -2484,7 +2498,7 @@ function tick(dt){const now=performance.now(),t=now/1000;
   else{if(G.view==='inter'&&G.g.ph==='end')$('endIn').textContent=Math.max(1,Math.ceil((G.phEnd-now)/1000));if(t>menuAt){menuAt=t+.25;if(!G.joined)drawMenu();else{drawLobby();if(G.g.ph==='end')drawBoard(true);}}}
   if(G.shDirty&&now-G.shAt>110){G.shDirty=false;G.shAt=now;renderer.shadowMap.needsUpdate=true;}
   if(now-pubAt>(!G.joined?1500:G.view!=='play'?350:net.kind==='web'?85:66))pub();
-  const gun=G.view==='play'&&me.role===2&&me.alive;if(gun)W.vm.update(dt,{speed:me.speed,bob:me.bob,sprint:me.sprint&&me.speed>4||G.g.ph==='prep',reload:!!me.reloadEnd,ads:G.adsK,lit:1});
+  const gun=G.view==='play'&&me.role===2&&me.alive&&!G.explore;if(gun)W.vm.update(dt,{speed:me.speed,bob:me.bob,sprint:me.sprint&&me.speed>4||G.g.ph==='prep',reload:!!me.reloadEnd,ads:G.adsK,lit:1});
   P.FX.render(G.view==='play',gun);P.FX.tick(now,G.view==='play'&&!G.paused);}
 
 setView('menu');drawMenu();initNet();
